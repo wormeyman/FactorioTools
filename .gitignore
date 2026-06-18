@@ -399,3 +399,5 @@ FodyWeavers.xsd
 
 # Custom
 *.received.*
+.DS_Store
+/Factorio API DocsVersion 2.0.76 files
