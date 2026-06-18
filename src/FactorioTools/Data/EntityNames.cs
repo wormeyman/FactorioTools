@@ -16,6 +16,8 @@ public class EntityNames
 
         public const string Beacon = "beacon";
 
+        public const string HeatPipe = "heat-pipe";
+
         public const string Wall = "stone-wall";
     }
 

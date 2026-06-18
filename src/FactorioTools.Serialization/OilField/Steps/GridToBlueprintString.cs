@@ -21,11 +21,59 @@ public static class GridToBlueprintString
         { EntityNames.Vanilla.Pipe, (1, 1) },
         { EntityNames.Vanilla.PipeToGround, (1, 1) },
         { EntityNames.Vanilla.Pumpjack, (3, 3) },
+        { EntityNames.Vanilla.HeatPipe, (1, 1) },
         { EntityNames.Vanilla.SmallElectricPole, (1, 1) },
         { EntityNames.Vanilla.Substation, (2, 2) },
 
         { EntityNames.AaiIndustry.SmallIronElectricPole, (1, 1) },
     };
+
+    /// <summary>
+    /// Converts an internal <see cref="Direction"/> (1.1-style 8-way values: N=0, E=2, S=4, W=6) to the value emitted in
+    /// the output blueprint. Factorio 2.0 uses 16-way directions (N=0, E=4, S=8, W=12), so heat (2.0) mode doubles them.
+    /// </summary>
+    private static Direction ToOutputDirection(Context context, Direction direction)
+    {
+        if (context.Options.AddHeatPipes)
+        {
+            return (Direction)((int)direction * 2);
+        }
+
+        return direction;
+    }
+
+    // defines.inventory.mining_drill_modules and defines.inventory.beacon_modules in Factorio 2.0, used to target the
+    // module inventory in the 2.0 "items" array form (confirmed against a real 2.0 export).
+    private const int MiningDrillModuleInventory = 2;
+    private const int BeaconModuleInventory = 1;
+
+    /// <summary>
+    /// Produces the value for an entity's "items" field. In 1.1 mode this is the module name-to-count dictionary; in
+    /// heat (2.0) mode it is a list of <see cref="ModuleInsertPlan"/> targeting the given module inventory. Returns null
+    /// when there are no modules so the field is omitted.
+    /// </summary>
+    private static object? ToOutputItems(Context context, Dictionary<string, int> modules, int inventory)
+    {
+        if (modules is null || modules.Count == 0)
+        {
+            return null;
+        }
+
+        if (!context.Options.AddHeatPipes)
+        {
+            return modules;
+        }
+
+        var plans = new List<ModuleInsertPlan>();
+        var stack = 0;
+        foreach (var pair in modules)
+        {
+            plans.Add(new ModuleInsertPlan { Name = pair.Key, Inventory = inventory, StartStack = stack, Count = pair.Value });
+            stack += pair.Value;
+        }
+
+        return plans;
+    }
 
     public static string Execute(Context context, bool addFbeOffset, bool addAvoidEntities)
     {
@@ -60,10 +108,10 @@ public static class GridToBlueprintString
                     entities.Add(new Entity
                     {
                         EntityNumber = nextEntityNumber++,
-                        Direction = pumpjackCenter.Direction,
+                        Direction = ToOutputDirection(context, pumpjackCenter.Direction),
                         Name = EntityNames.Vanilla.Pumpjack,
                         Position = position,
-                        Items = context.Options.PumpjackModules,
+                        Items = ToOutputItems(context, context.Options.PumpjackModules, MiningDrillModuleInventory),
                     });
                     break;
                 case PumpjackSide:
@@ -73,8 +121,16 @@ public static class GridToBlueprintString
                     entities.Add(new Entity
                     {
                         EntityNumber = nextEntityNumber++,
-                        Direction = undergroundPipe.Direction,
+                        Direction = ToOutputDirection(context, undergroundPipe.Direction),
                         Name = EntityNames.Vanilla.PipeToGround,
+                        Position = position,
+                    });
+                    break;
+                case HeatPipe:
+                    entities.Add(new Entity
+                    {
+                        EntityNumber = nextEntityNumber++,
+                        Name = context.Options.HeatPipeEntityName,
                         Position = position,
                     });
                     break;
@@ -128,7 +184,7 @@ public static class GridToBlueprintString
                         EntityNumber = nextEntityNumber++,
                         Name = context.Options.BeaconEntityName,
                         Position = position,
-                        Items = context.Options.BeaconModules,
+                        Items = ToOutputItems(context, context.Options.BeaconModules, BeaconModuleInventory),
                     });
                     break;
                 case AvoidEntity:
@@ -164,7 +220,9 @@ public static class GridToBlueprintString
                     }
                 }
             },
-            Version = FormatVersion(1, 1, 101, 1),
+            // Heat pipes / the Aquilo freezing mechanic are a Factorio 2.0 (Space Age) feature, so emit a 2.0 version
+            // string in heat mode. Otherwise keep the established 1.1 version for unchanged output.
+            Version = context.Options.AddHeatPipes ? FormatVersion(2, 0, 32, 0) : FormatVersion(1, 1, 101, 1),
             Item = ItemNames.Vanilla.Blueprint,
             Entities = entities.ToArray(),
         };
@@ -223,10 +281,7 @@ public static class GridToBlueprintString
 
         var root = new BlueprintRoot { Blueprint = blueprint };
 
-        var json = JsonSerializer.Serialize(root, typeof(BlueprintRoot), new BlueprintSerializationContext(new JsonSerializerOptions
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        }));
+        var json = JsonSerializer.Serialize(root, typeof(BlueprintRoot), BlueprintSerialization.Context);
 
         var bytes = Encoding.UTF8.GetBytes(json);
         using var outputStream = new MemoryStream();

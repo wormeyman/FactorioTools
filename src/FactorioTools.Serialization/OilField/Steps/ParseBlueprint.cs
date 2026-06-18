@@ -48,11 +48,10 @@ public static class ParseBlueprint
 
             looksLikeJson = json.StartsWith('{');
 
-            var context = BlueprintSerializationContext.Default;
             root = JsonSerializer.Deserialize(
                 json,
                 typeof(BlueprintRoot),
-                context) as BlueprintRoot;
+                BlueprintSerialization.Context) as BlueprintRoot;
         }
         catch (Exception ex) when (ex is FormatException || ex is JsonException || hadMissingPadding || looksLikeJson)
         {

@@ -17,8 +17,11 @@ public class Entity
     [JsonPropertyName("direction")]
     public Direction? Direction { get; set; }
 
+    // Either a Dictionary<string, int> (Factorio 1.1 "items" object) or a List<ModuleInsertPlan> (Factorio 2.0 "items"
+    // array). The shape is handled by EntityItemsConverter in the serialization project so the core library stays free
+    // of serialization logic. See GridToBlueprintString for how each version is produced.
     [JsonPropertyName("items")]
-    public Dictionary<string, int>? Items { get; set; }
+    public object? Items { get; set; }
 
     [JsonPropertyName("neighbours")]
     public int[]? Neighbours { get; set; }

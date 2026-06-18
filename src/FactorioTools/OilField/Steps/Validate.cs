@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Knapcode.FactorioTools.Data;
 using static Knapcode.FactorioTools.OilField.Helpers;
 
@@ -156,6 +157,101 @@ public static class Validate
             {
                 // Visualizer.Show(context.Grid, new[] { candidate }.Select(p => (DelaunatorSharp.IPoint)new DelaunatorSharp.Point(p.X, p.Y)), Array.Empty<DelaunatorSharp.IEdge>());
                 throw new FactorioToolsException($"Candidate {candidate} should have been eliminated.");
+            }
+        }
+    }
+
+    public static void HeatPipesCoverAllTargets(Context context)
+    {
+        if (context.Options.ValidateSolution && context.Options.AddHeatPipes)
+        {
+            if (context.HeatPipes is null)
+            {
+                throw new FactorioToolsException("Heat pipes were requested but none were routed.");
+            }
+
+#if USE_STACKALLOC && LOCATION_AS_STRUCT
+            Span<Location> adjacent = stackalloc Location[4];
+#else
+            Span<Location> adjacent = new Location[4];
+#endif
+
+            // Every pipe tile must be orthogonally adjacent to a heat pipe.
+            foreach (var location in context.Grid.EntityLocations.EnumerateItems())
+            {
+                if (context.Grid[location] is not Pipe)
+                {
+                    continue;
+                }
+
+                context.Grid.GetAdjacent(adjacent, location);
+                var heated = false;
+                for (var i = 0; i < adjacent.Length && !heated; i++)
+                {
+                    heated = adjacent[i].IsValid && context.Grid[adjacent[i]] is HeatPipe;
+                }
+
+                if (!heated)
+                {
+                    throw new FactorioToolsException($"A pipe at {location} is not adjacent to a heat pipe and would freeze on Aquilo.");
+                }
+            }
+
+            // Every pumpjack must have a heat pipe somewhere in the ring around its 3x3 footprint.
+            for (var c = 0; c < context.Centers.Count; c++)
+            {
+                var center = context.Centers[c];
+                var heated = false;
+                for (var i = 0; i < AddHeatPipes.PumpjackRingOffsets.Length && !heated; i++)
+                {
+                    var ringLocation = center.Translate(AddHeatPipes.PumpjackRingOffsets[i]);
+                    heated = context.Grid.IsInBounds(ringLocation) && context.Grid[ringLocation] is HeatPipe;
+                }
+
+                if (!heated)
+                {
+                    throw new FactorioToolsException($"A pumpjack at {center} is not adjacent to a heat pipe and would freeze on Aquilo.");
+                }
+            }
+        }
+    }
+
+    public static void HeatPipesAreConnected(Context context)
+    {
+        if (context.Options.ValidateSolution && context.Options.AddHeatPipes && context.HeatPipes is not null && context.HeatPipes.Count > 0)
+        {
+            var heatPipes = context.HeatPipes;
+            var visited = context.GetLocationSet();
+            var queue = new Queue<Location>();
+            var start = heatPipes.EnumerateItems().First();
+            queue.Enqueue(start);
+            visited.Add(start);
+            var reached = 1;
+
+#if USE_STACKALLOC && LOCATION_AS_STRUCT
+            Span<Location> adjacent = stackalloc Location[4];
+#else
+            Span<Location> adjacent = new Location[4];
+#endif
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                context.Grid.GetAdjacent(adjacent, current);
+                for (var i = 0; i < adjacent.Length; i++)
+                {
+                    var next = adjacent[i];
+                    if (next.IsValid && heatPipes.Contains(next) && visited.Add(next))
+                    {
+                        reached++;
+                        queue.Enqueue(next);
+                    }
+                }
+            }
+
+            if (reached != heatPipes.Count)
+            {
+                throw new FactorioToolsException("The heat pipe network is not fully connected, so heat from a single source would not reach all of it.");
             }
         }
     }
