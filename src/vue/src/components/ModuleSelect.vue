@@ -1,7 +1,7 @@
 <template>
-  <CustomizeSelect :defaultIsCustom="isCustom" @update:isCustom="newVal => $emit('update:isCustom', newVal)"
+  <CustomizeSelect :defaultIsCustom="isCustom" @update:isCustom="(newVal: boolean) => $emit('update:isCustom', newVal)"
     customLabel="Module" :label="label" :showAdvancedOptions="showAdvancedOptions" :defaultValue="defaultValue"
-    @update:modelValue="newVal => $emit('update:modelValue', newVal)">
+    @update:modelValue="(newVal: string) => $emit('update:modelValue', newVal)">
     <option value="">None</option>
     <option value="effectivity-module">Efficiency module</option>
     <option value="effectivity-module-2">Efficiency module 2</option>
