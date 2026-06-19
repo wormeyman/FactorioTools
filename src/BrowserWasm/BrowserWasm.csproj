@@ -6,7 +6,7 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
-    <RunAOTCompilation>true</RunAOTCompilation>
+    <RunAOTCompilation>false</RunAOTCompilation>
 
     <WasmEnableES6>true</WasmEnableES6>
     
@@ -31,6 +31,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\FactorioTools.Serialization\FactorioTools.Serialization.csproj" />
+    <ProjectReference Include="..\FactorioTools.Contract\FactorioTools.Contract.csproj" />
   </ItemGroup>
 
   <ItemGroup>
