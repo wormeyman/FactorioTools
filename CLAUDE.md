@@ -71,8 +71,8 @@ Pure planning logic with **no JSON/serialization dependencies** - this is intent
 Blueprint string parsing and emitting live here, separate from the core lib: `ParseBlueprint`, `GridToBlueprintString`, `NormalizeBlueprints`, plus the `System.Text.Json` source-gen context. Front-ends and the CLI reference this project, not just the core.
 
 ### Front-ends and hosts
-- `src/WebApp` - ASP.NET Core API (`OilFieldController`, routes under `api/v1/oil-field`: `normalize`, `plan`). Produces `swagger.json` consumed by the Vue client. Deployed via `Dockerfile`.
-- `src/vue` - the primary front-end (Vue 3 + Vite + Pinia, persisted settings). This is what's deployed to GitHub Pages / Vercel.
+- `src/WebApp` - ASP.NET Core API (`OilFieldController`, routes under `api/v1/oil-field`: `normalize`, `plan`; the actions delegate to `PlanOrchestrator`). Produces `swagger.json` consumed by the Vue client's `swagger-gen`. No longer deployed (the Azure target was retired when the front-end moved to in-browser WASM); kept for local API use, swagger generation, and the `Dockerfile` if self-hosting is wanted.
+- `src/vue` - the primary front-end (Vue 3 + Vite + Pinia, persisted settings). This is what's deployed to Cloudflare Pages (the `factoriotools` project, via `.github/workflows/deploy-cloudflare.yml`); it plans in-browser via the WASM bundle and no longer calls a hosted API.
 - `src/BrowserWasm` - runs the planner fully client-side via .NET WASM AOT (trimmed). Lets the SPA plan without the API.
 - `src/BlazorWebApp` - alternate Blazor host.
 - `src/FactorioTools.Cli` (`System.CommandLine`) - `oil-field` subcommands `sample`, `normalize`, `sandbox`. Output assembly is `Knapcode.FactorioTools.Sandbox`.
