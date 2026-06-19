@@ -13,8 +13,8 @@ env:
   BUILD_PATH: "./src/vue"
 
 jobs:
-  build-pages:
-    name: Build pages
+  build-vue:
+    name: Build front-end
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,15 +24,11 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: "npm"
           cache-dependency-path: ${{ env.BUILD_PATH }}/package-lock.json
-
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v3
 
       - name: Restore dependencies
         run: npm install
@@ -41,15 +37,9 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: ${{ env.BUILD_PATH }}
-        env:
-          BASE_PATH: "${{ steps.pages.outputs.base_path }}"
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: "${{ env.BUILD_PATH }}/dist"
 
   build-dotnet:
-    name: Build and deploy
+    name: Build and test .NET
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
