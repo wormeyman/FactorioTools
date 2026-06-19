@@ -18,13 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: "npm"
@@ -38,17 +38,46 @@ jobs:
         run: npm run build
         working-directory: ${{ env.BUILD_PATH }}
 
-  build-dotnet:
-    name: Build and test .NET
+  test-lua:
+    name: Test .NET with Lua settings
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore workloads
+        run: dotnet workload restore
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build debug, with Lua settings
+        run: dotnet build --configuration Debug /p:UseLuaSettings=true
+
+      - name: Build release, with Lua settings
+        run: dotnet build --configuration Release /p:UseLuaSettings=true
+
+      - name: Test with Lua settings
+        run: dotnet test --no-build --configuration Release --logger "console;verbosity=normal"
+
+  test-default:
+    name: Test .NET with default settings
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
@@ -84,15 +113,6 @@ jobs:
 
       - name: Build debug, no grid ToString
         run: dotnet build --configuration Debug /p:EnableGridToString=false
-
-      - name: Build debug, with Lua settings
-        run: dotnet build --configuration Debug /p:UseLuaSettings=true
-
-      - name: Build debug, with Lua settings
-        run: dotnet build --configuration Release /p:UseLuaSettings=true
-
-      - name: Test with Lua settings
-        run: dotnet test --no-build --configuration Release --logger "console;verbosity=normal"
 
       - name: Build release with default settings
         run: dotnet build --configuration Release
