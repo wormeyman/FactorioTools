@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RootNamespace>Knapcode.FactorioTools.Contract</RootNamespace>
+    <AssemblyName>Knapcode.FactorioTools.Contract</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FactorioTools\FactorioTools.csproj" />
+    <ProjectReference Include="..\FactorioTools.Serialization\FactorioTools.Serialization.csproj" />
+  </ItemGroup>
+
+</Project>

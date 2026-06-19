@@ -1,5 +1,5 @@
 using Knapcode.FactorioTools.OilField;
-using Knapcode.FactorioTools.WebApp.Models;
+using Knapcode.FactorioTools.Contract;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 

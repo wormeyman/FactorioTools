@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Knapcode.FactorioTools.Contract;
 using Knapcode.FactorioTools.OilField;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;

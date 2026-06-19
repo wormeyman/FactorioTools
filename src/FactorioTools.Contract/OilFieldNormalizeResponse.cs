@@ -1,4 +1,4 @@
-﻿namespace Knapcode.FactorioTools.WebApp.Models;
+﻿namespace Knapcode.FactorioTools.Contract;
 
 /// <summary>
 /// The normalized oil field blueprint.
