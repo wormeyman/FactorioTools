@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Knapcode.FactorioTools.Contract;
 using Xunit;
 
@@ -29,5 +30,31 @@ public class PlanOrchestratorTest
         var ex = Assert.Throws<FactorioToolsException>(
             () => PlanOrchestrator.Plan(new OilFieldPlanRequest { Blueprint = "not-a-blueprint" }));
         Assert.True(ex.BadInput || !ex.BadInput); // exception type is the contract; flag asserted in Task 4
+    }
+
+    [Fact]
+    public void PlanJson_HappyPath_ReturnsResponseJson()
+    {
+        var requestJson = JsonSerializer.Serialize(
+            new OilFieldPlanRequest { Blueprint = SampleBlueprint }, ContractJson.Options);
+
+        var responseJson = PlanOrchestrator.PlanJson(requestJson);
+
+        var response = JsonSerializer.Deserialize<OilFieldPlanResponse>(responseJson, ContractJson.Options)!;
+        Assert.False(string.IsNullOrEmpty(response.Blueprint));
+    }
+
+    [Fact]
+    public void PlanJson_BadInput_ReturnsErrorEnvelope()
+    {
+        var requestJson = JsonSerializer.Serialize(
+            new OilFieldPlanRequest { Blueprint = "not-a-blueprint" }, ContractJson.Options);
+
+        var responseJson = PlanOrchestrator.PlanJson(requestJson);
+
+        var envelope = JsonSerializer.Deserialize<ErrorEnvelope>(responseJson, ContractJson.Options)!;
+        Assert.Equal(400, envelope.Status);
+        Assert.True(envelope.Errors.ContainsKey("FactorioToolsException"));
+        Assert.NotEmpty(envelope.Errors["FactorioToolsException"]);
     }
 }
