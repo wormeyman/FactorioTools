@@ -10,7 +10,7 @@ FactorioTools is a Factorio oil-field (outpost) blueprint planner. Given a bluep
 
 - **.NET SDK 8.0.100** (pinned in `global.json`, `rollForward: latestFeature`).
 - **Git submodules are required** (`FluteSharp`, `delaunator-sharp`, `CSharp.lua`). Clone/update with `git submodule update --init --recursive`. CI checks out with `submodules: recursive`.
-- Node 18 for the Vue front-end.
+- Node 24 (Active LTS) for the Vue front-end.
 - The browser-WASM project needs `dotnet workload restore`.
 
 ## Common commands
