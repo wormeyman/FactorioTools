@@ -109,6 +109,13 @@ export const Steps = {
     shortDescription: "Joel's electric pole planner",
     longDescription: "Joel's electric pole planning algorithm, which adds electric poles around all powered entities and uses Bresenham's line to connect groups",
   }),
+
+  HeatPipesStep: newStep({
+    text: "heat",
+    class: "text-bg-dark border border-secondary",
+    shortDescription: "add heatpipes for Aquilo",
+    longDescription: "Routes a single connected heat pipe network adjacent to every pumpjack and pipe so the oil field does not freeze on Aquilo",
+  }),
 }
 
 const allSteps: Step[] = []
@@ -116,6 +123,7 @@ allSteps.push(...Object.values(PipeStrategy).map(getPipeStep))
 allSteps.push(Steps.OptimizeStep)
 allSteps.push(Steps.UndergroundPipesStep)
 allSteps.push(...Object.values(BeaconStrategy).map(getBeaconStep))
+allSteps.push(Steps.HeatPipesStep)
 allSteps.push(Steps.PolesStep)
 
 export const AllSteps: ReadonlyArray<Step> = allSteps

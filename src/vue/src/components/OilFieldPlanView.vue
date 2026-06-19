@@ -143,6 +143,9 @@ export default {
         if (c.beaconStrategy) {
           c.steps.push(getBeaconStep(c.beaconStrategy))
         }
+        if (c.category == PlanCategory.Selected && this.plan.data.request.addHeatPipes) {
+          c.steps.push(Steps.HeatPipesStep)
+        }
         if (c.category == PlanCategory.Selected && this.plan.data.request.addElectricPoles) {
           c.steps.push(Steps.PolesStep)
         }
