@@ -13,12 +13,7 @@
         <AlgorithmStep v-bind="Steps.OptimizeStep" :show-as-option="true" />
       </label>
     </div>
-    <div class="form-check">
-      <input type="checkbox" class="form-check-input" id="add-heat-pipes" v-model="addHeatPipes">
-      <label class="form-check-label" for="add-heat-pipes">
-        <AlgorithmStep v-bind="Steps.HeatPipesStep" :show-as-option="true" />
-      </label>
-    </div>
+
     <div class="form-check">
       <input type="checkbox" class="form-check-input" id="validate-solution" v-model="validateSolution">
       <label class="form-check-label" for="validate-solution">Validate solution 🐛</label> (slower but checks for
@@ -128,8 +123,7 @@ export default {
         'pipeStrategyConnectedCentersFlute',
         'beaconStrategyFbeOriginal',
         'beaconStrategyFbe',
-        'beaconStrategySnug',
-        'addHeatPipes'), {
+        'beaconStrategySnug'), {
       Steps: Steps
     });
   },
@@ -155,7 +149,6 @@ export default {
       this.beaconStrategyFbeOriginal = defaults.beaconStrategyFbeOriginal;
       this.beaconStrategyFbe = defaults.beaconStrategyFbe;
       this.beaconStrategySnug = defaults.beaconStrategySnug;
-      this.addHeatPipes = defaults.addHeatPipes;
     }
   },
   components: { AlgorithmStep }
