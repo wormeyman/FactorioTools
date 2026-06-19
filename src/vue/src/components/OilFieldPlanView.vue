@@ -111,7 +111,7 @@ export default {
   },
   computed: {
     fbeUrl() {
-      return `https://fbe.teoxoy.com/?source=${this.plan.data.blueprint}`;
+      return `https://fbeworkeyman.wormeyman.workers.dev/?source=${this.plan.data.blueprint}`;
     },
     allPlans(): SelectedOilFieldPlan[] {
       const allPlans = []
