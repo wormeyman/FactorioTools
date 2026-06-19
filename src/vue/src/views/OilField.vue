@@ -168,7 +168,7 @@ export default {
       return `${location.protocol}//${location.host}${location.pathname}?${queryString}`
     },
     fbeUrl() {
-      return `https://fbe.teoxoy.com/?source=${this.inputBlueprint}`
+      return `https://fbeworkeyman.wormeyman.workers.dev/?source=${this.inputBlueprint}`
     }
   },
   methods: {
