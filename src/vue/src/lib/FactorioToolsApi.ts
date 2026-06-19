@@ -113,6 +113,20 @@ export interface OilFieldPlanRequest {
    */
   addElectricPoles?: boolean;
   /**
+   * Whether or not to route a heat pipe network adjacent to every pumpjack and pipe. This is required on Aquilo
+   * (Factorio 2.0 / Space Age) where unheated entities freeze. When enabled, the output blueprint is emitted in the
+   * Factorio 2.0 version format (2.0 directions and module item format). The planner only routes the heat pipe network
+   * and leaves it for the user to connect a heat source (heating tower or reactor). Beacons (see Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons)
+   * compete with heat pipes for the tiles next to pipes, so coverage is best with beacons off.
+   * @default false
+   */
+  addHeatPipes?: boolean;
+  /**
+   * The internal entity name for the heat pipe to use.
+   * @default "heat-pipe"
+   */
+  heatPipeEntityName?: string;
+  /**
    * The pipe planning strategies to attempt.
    * @default ["Fbe","ConnectedCentersDelaunay","ConnectedCentersDelaunayMst","ConnectedCentersFlute"]
    */
@@ -242,6 +256,16 @@ export interface OilFieldPlanRequestResponse {
   overlapBeacons: boolean;
   /** Whether or not to add electric poles around the pumpjacks and (optionally) beacons. */
   addElectricPoles: boolean;
+  /**
+   * Whether or not to route a heat pipe network adjacent to every pumpjack and pipe. This is required on Aquilo
+   * (Factorio 2.0 / Space Age) where unheated entities freeze. When enabled, the output blueprint is emitted in the
+   * Factorio 2.0 version format (2.0 directions and module item format). The planner only routes the heat pipe network
+   * and leaves it for the user to connect a heat source (heating tower or reactor). Beacons (see Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons)
+   * compete with heat pipes for the tiles next to pipes, so coverage is best with beacons off.
+   */
+  addHeatPipes: boolean;
+  /** The internal entity name for the heat pipe to use. */
+  heatPipeEntityName: string;
   /** The pipe planning strategies to attempt. */
   pipeStrategies: PipeStrategy[];
   /** The beacon planning strategies to attempt. This will have no affect if Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons is false. */
