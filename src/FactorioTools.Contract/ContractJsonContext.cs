@@ -22,11 +22,12 @@ public static class ContractJson
 {
     public static JsonSerializerOptions Options { get; } = Create();
 
+    internal static ContractJsonContext Context { get; } = new ContractJsonContext(Options);
+
     private static JsonSerializerOptions Create()
     {
         var options = new JsonSerializerOptions
         {
-            TypeInfoResolver = ContractJsonContext.Default,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             PropertyNameCaseInsensitive = true,
             NumberHandling = JsonNumberHandling.AllowReadingFromString,

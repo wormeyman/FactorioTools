@@ -27,13 +27,13 @@ public static class PlanOrchestrator
     {
         try
         {
-            var request = JsonSerializer.Deserialize<OilFieldPlanRequest>(requestJson, ContractJson.Options)!;
+            var request = JsonSerializer.Deserialize(requestJson, ContractJson.Context.OilFieldPlanRequest)!;
             var response = Plan(request);
-            return JsonSerializer.Serialize(response, ContractJson.Options);
+            return JsonSerializer.Serialize(response, ContractJson.Context.OilFieldPlanResponse);
         }
         catch (FactorioToolsException ex)
         {
-            return JsonSerializer.Serialize(ToEnvelope(ex), ContractJson.Options);
+            return JsonSerializer.Serialize(ToEnvelope(ex), ContractJson.Context.ErrorEnvelope);
         }
     }
 
@@ -41,13 +41,13 @@ public static class PlanOrchestrator
     {
         try
         {
-            var request = JsonSerializer.Deserialize<OilFieldNormalizeRequest>(requestJson, ContractJson.Options)!;
+            var request = JsonSerializer.Deserialize(requestJson, ContractJson.Context.OilFieldNormalizeRequest)!;
             var response = Normalize(request);
-            return JsonSerializer.Serialize(response, ContractJson.Options);
+            return JsonSerializer.Serialize(response, ContractJson.Context.OilFieldNormalizeResponse);
         }
         catch (FactorioToolsException ex)
         {
-            return JsonSerializer.Serialize(ToEnvelope(ex), ContractJson.Options);
+            return JsonSerializer.Serialize(ToEnvelope(ex), ContractJson.Context.ErrorEnvelope);
         }
     }
 

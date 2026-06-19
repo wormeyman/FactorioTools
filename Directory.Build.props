@@ -31,5 +31,9 @@
     <LocationAsStruct Condition="'$(LocationAsStruct)' == ''">true</LocationAsStruct>
     <DefineConstants Condition="$(LocationAsStruct) == 'true'">$(DefineConstants);LOCATION_AS_STRUCT</DefineConstants>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
+  </PropertyGroup>
   
 </Project>
