@@ -33,7 +33,16 @@ npm install
 npm run dev            # vite dev server
 npm run build          # regenerates TS API client from swagger, type-checks, builds
 npm run swagger-gen    # regenerate src/lib API client from ../WebApp/swagger.json
+npm run build-wasm     # publish BrowserWasm and copy _framework (incl. dotnet.js) into public/
 ```
+
+- The Vue app plans in-browser via .NET WASM. After changing C# planner code, run
+  `npm run build-wasm` in `src/vue` to refresh `public/_framework` (the bundle's
+  `dotnet.js` ships inside `_framework`). Requires the .NET 8 SDK plus the wasm-tools
+  workload; without a local .NET 8 SDK, publish via `./docker-build.sh` (the SDK image
+  also needs `python3` on PATH for the emscripten native relink step) and copy
+  `src/BrowserWasm/bin/Release/net8.0/browser-wasm/AppBundle/_framework` into
+  `src/vue/public/`. `npm run dev` / `npm run build` serve those assets.
 
 ### Building without a local .NET 8 SDK (Docker / OrbStack)
 

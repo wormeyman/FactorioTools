@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "npm run swagger-gen && vue-tsc && vite build && cd dist && shx cp index.html 404.html",
     "preview": "vite preview",
-    "swagger-gen": "swagger-typescript-api generate --path ../WebApp/swagger.json --output src/lib --name FactorioToolsApi"
+    "swagger-gen": "swagger-typescript-api generate --path ../WebApp/swagger.json --output src/lib --name FactorioToolsApi",
+    "build-wasm": "dotnet publish ../BrowserWasm/BrowserWasm.csproj -c Release && shx rm -rf public/_framework && shx cp -r ../BrowserWasm/bin/Release/net8.0/browser-wasm/AppBundle/_framework public/"
   },
   "dependencies": {
     "bootstrap": "^5.2.3",
