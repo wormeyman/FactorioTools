@@ -1,5 +1,5 @@
 <template>
-  <fieldset class="border p-3 mb-3">
+  <fieldset class="border p-3 h-100">
     <legend>Electric poles</legend>
     <div class="form-check">
       <input type="checkbox" class="form-check-input" id="add-electric-poles" v-model="addElectricPoles">

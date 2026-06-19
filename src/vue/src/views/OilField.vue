@@ -50,18 +50,18 @@
     </fieldset>
     <ResponseErrorView v-if="normalizeError" :error="normalizeError" />
     <div class="row">
-      <div class="col-md-6">
+      <div class="col-md-6 mb-3">
         <PumpjacksForm :show-advanced-options="useAdvancedOptions" />
       </div>
-      <div class="col-md-6">
+      <div class="col-md-6 mb-3">
         <BeaconForm :show-advanced-options="useAdvancedOptions" />
       </div>
     </div>
     <div class="row">
-      <div class="col-md-6">
+      <div class="col-md-6 mb-3">
         <ElectricPoleSelect :show-advanced-options="useAdvancedOptions" />
       </div>
-      <div class="col-md-6">
+      <div class="col-md-6 mb-3">
         <HeatPipeForm :show-advanced-options="useAdvancedOptions" />
       </div>
     </div>
