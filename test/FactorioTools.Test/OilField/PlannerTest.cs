@@ -128,6 +128,50 @@ public class PlannerTest : BasePlannerTest
     }
 
     [Fact]
+    public async Task AddsHeatPipesForAquilo()
+    {
+        // Arrange
+        var options = OilFieldOptions.ForMediumElectricPole;
+        options.ValidateSolution = true;
+        options.AddHeatPipes = true;
+        options.AddBeacons = false; // best heat coverage is with beacons off
+        var blueprintString = SmallListBlueprintStrings[0];
+        var blueprint = ParseBlueprint.Execute(blueprintString);
+
+        // Act
+        var result = Planner.Execute(options, blueprint);
+
+        // Assert
+        Assert.Empty(result.Context.Grid.GetEntities().OfType<BeaconCenter>());
+        Assert.NotNull(result.Context.HeatPipes);
+        Assert.NotEmpty(result.Context.Grid.GetEntities().OfType<HeatPipe>());
+#if USE_VERIFY
+        await Verify(GetGridString(result));
+#else
+        await Task.Yield();
+#endif
+    }
+
+    [Fact]
+    public void EmitsHeatPipesInTwoPointZeroBlueprint()
+    {
+        // Arrange
+        var options = OilFieldOptions.ForMediumElectricPole;
+        options.AddHeatPipes = true;
+        var blueprint = ParseBlueprint.Execute(SmallListBlueprintStrings[0]);
+        var (context, _) = Planner.Execute(options, blueprint);
+
+        // Act
+        var blueprintString = GridToBlueprintString.Execute(context, addFbeOffset: false, addAvoidEntities: false);
+        var parsed = ParseBlueprint.Execute(blueprintString);
+
+        // Assert
+        var (major, _, _, _) = GridToBlueprintString.ParseVersion(parsed.Version);
+        Assert.Equal(2, major);
+        Assert.Contains(parsed.Entities, e => e.Name == EntityNames.Vanilla.HeatPipe);
+    }
+
+    [Fact]
     public async Task ExecuteSample()
     {
         var result = Planner.ExecuteSample();

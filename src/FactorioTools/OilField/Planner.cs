@@ -163,6 +163,11 @@ public static class Planner
 
         // Visualizer.Show(context.Grid, Array.Empty<DelaunatorSharp.IPoint>(), Array.Empty<DelaunatorSharp.IEdge>());
 
+        // Heat pipes have a hard constraint (they must be orthogonally adjacent to every pumpjack and pipe), while
+        // electric poles are flexible (they only need to be within supply range). Route heat pipes first so they claim
+        // the contested tiles next to pipes/pumpjacks, then let electric poles place around them.
+        AddHeatPipes.Execute(context);
+
         if (options.AddElectricPoles)
         {
             if (!addElectricPolesFirst || context.Options.AddBeacons)
@@ -215,6 +220,9 @@ public static class Planner
                 rotatedPumpjacks++;
             }
         }
+
+        Validate.HeatPipesCoverAllTargets(context);
+        Validate.HeatPipesAreConnected(context);
 
         var planSummary = new OilFieldPlanSummary(
             missingPumpjacks,

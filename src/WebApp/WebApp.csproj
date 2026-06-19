@@ -32,7 +32,13 @@
     <Copy SourceFiles="@(ReferenceFiles)" DestinationFolder="$(OutputPath)" Condition="Exists('%(RootDir)%(Directory)%(Filename)%(Extension)')" />
   </Target>
   
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <!--
+    Regenerates the committed swagger.json (consumed by the Vue client's swagger-gen).
+    Skipped when GenerateSwagger=false - e.g. the WebApp Dockerfile publishes
+    self-contained for linux-musl-x64, which the swagger tool can't load on a
+    glibc build host, and the committed swagger.json is sufficient there.
+  -->
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(GenerateSwagger)' != 'false'">
     <Exec Command="dotnet tool restore" StandardOutputImportance="normal" />
     <Exec Command="dotnet swagger tofile --output swagger.json $(OutputPath)\$(AssemblyName).dll v1" StandardOutputImportance="normal" />
   </Target>

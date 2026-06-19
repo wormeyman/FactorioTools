@@ -144,6 +144,20 @@ public class OilFieldOptions
     public bool AddElectricPoles { get; set; } = true;
 
     /// <summary>
+    /// Whether or not to route a heat pipe network adjacent to every pumpjack and pipe. This is required on Aquilo
+    /// (Factorio 2.0 / Space Age) where unheated entities freeze. When enabled, the output blueprint is emitted in the
+    /// Factorio 2.0 version format (2.0 directions and module item format). The planner only routes the heat pipe network
+    /// and leaves it for the user to connect a heat source (heating tower or reactor). Beacons (see <see cref="AddBeacons"/>)
+    /// compete with heat pipes for the tiles next to pipes, so coverage is best with beacons off.
+    /// </summary>
+    public bool AddHeatPipes { get; set; } = false;
+
+    /// <summary>
+    /// The internal entity name for the heat pipe to use.
+    /// </summary>
+    public string HeatPipeEntityName { get; set; } = EntityNames.Vanilla.HeatPipe;
+
+    /// <summary>
     /// The pipe planning strategies to attempt.
     /// </summary>
     public List<PipeStrategy> PipeStrategies { get; set; } = new List<PipeStrategy>(DefaultPipeStrategies);

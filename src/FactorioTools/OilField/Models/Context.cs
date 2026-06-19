@@ -17,6 +17,12 @@ public class Context
     public required ILocationDictionary<List<TerminalLocation>> LocationToTerminals { get; set; }
     public required int[] LocationToAdjacentCount { get; set; }
 
+    /// <summary>
+    /// The heat pipe network routed by <see cref="AddHeatPipes"/>, or null if <see cref="OilFieldOptions.AddHeatPipes"/>
+    /// is false. These locations also have <see cref="HeatPipe"/> entities placed on the <see cref="Grid"/>.
+    /// </summary>
+    public ILocationSet? HeatPipes { get; set; }
+
     public required SharedInstances SharedInstances { get; set; }
 
     public ILocationDictionary<T> GetLocationDictionary<T>()
