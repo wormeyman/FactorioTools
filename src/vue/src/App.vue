@@ -17,12 +17,12 @@
   <footer class="footer bg-light">
     <div class="container">
       <p class="text-muted py-3">
-        Site by <a href="https://joelverhagen.com/">Joel Verhagen</a>,
+        Site originally by <a href="https://joelverhagen.com/">Joel Verhagen</a>,
         version {{ gitVersion }},
-        commit <a :href="`https://github.com/joelverhagen/FactorioTools/tree/${gitCommit}`">{{ gitCommit }}</a>,
-        branch <a :href="`https://github.com/joelverhagen/FactorioTools/tree/${gitBranch}`">{{ gitBranch }}</a>,
+        commit <a :href="`https://github.com/wormeyman/FactorioTools/tree/${gitCommit}`">{{ gitCommit }}</a>,
+        branch <a :href="`https://github.com/wormeyman/FactorioTools/tree/${gitBranch}`">{{ gitBranch }}</a>,
         built on {{ buildDate }}.
-        Report bugs at the <a href="https://github.com/joelverhagen/FactorioTools">GitHub repository</a>.
+        Report bugs at the <a href="https://github.com/wormeyman/FactorioTools">GitHub repository</a>.
       </p>
     </div>
   </footer>
