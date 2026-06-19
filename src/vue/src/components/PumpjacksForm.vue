@@ -1,5 +1,5 @@
 <template>
-  <fieldset class="border p-3 mb-3">
+  <fieldset class="border p-3 h-100">
     <legend>Pumpjacks</legend>
     <ModuleSelect label="Pumpjack module" :showAdvancedOptions="showAdvancedOptions" showProductivityModules
       :defaultValue="pumpjackModule" :defaultIsCustom="pumpjackModuleIsCustom" v-model="pumpjackModule"

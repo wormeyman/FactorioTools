@@ -41,7 +41,8 @@
   -->
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(GenerateSwagger)' != 'false'">
     <Exec Command="dotnet tool restore" StandardOutputImportance="normal" />
-    <Exec Command="dotnet swagger tofile --output swagger.json $(OutputPath)\$(AssemblyName).dll v1" StandardOutputImportance="normal" />
+    <!-- DOTNET_ROLL_FORWARD=Major lets the net7-targeted Swashbuckle CLI run on net8-only hosts (CI runners), which otherwise fail with exit code 150. -->
+    <Exec Command="dotnet swagger tofile --output swagger.json $(OutputPath)\$(AssemblyName).dll v1" StandardOutputImportance="normal" EnvironmentVariables="DOTNET_ROLL_FORWARD=Major" />
   </Target>
 
 </Project>

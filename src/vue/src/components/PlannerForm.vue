@@ -13,6 +13,7 @@
         <AlgorithmStep v-bind="Steps.OptimizeStep" :show-as-option="true" />
       </label>
     </div>
+
     <div class="form-check">
       <input type="checkbox" class="form-check-input" id="validate-solution" v-model="validateSolution">
       <label class="form-check-label" for="validate-solution">Validate solution 🐛</label> (slower but checks for

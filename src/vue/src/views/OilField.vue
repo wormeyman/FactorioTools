@@ -49,9 +49,22 @@
         data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"></textarea>
     </fieldset>
     <ResponseErrorView v-if="normalizeError" :error="normalizeError" />
-    <PumpjacksForm :show-advanced-options="useAdvancedOptions" />
-    <BeaconForm :show-advanced-options="useAdvancedOptions" />
-    <ElectricPoleSelect :show-advanced-options="useAdvancedOptions" />
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <PumpjacksForm :show-advanced-options="useAdvancedOptions" />
+      </div>
+      <div class="col-md-6 mb-3">
+        <BeaconForm :show-advanced-options="useAdvancedOptions" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <ElectricPoleSelect :show-advanced-options="useAdvancedOptions" />
+      </div>
+      <div class="col-md-6 mb-3">
+        <HeatPipeForm :show-advanced-options="useAdvancedOptions" />
+      </div>
+    </div>
     <PlannerForm :show-advanced-options="useAdvancedOptions" v-show="useAdvancedOptions" />
     <div class="d-grid gap-2">
       <button type="submit" class="btn btn-primary btn-lg" @click.prevent="submit" :disabled="cannotSubmit">
@@ -103,6 +116,7 @@
 import { ApiError, ApiResult, getPlan, normalize } from '../lib/OilFieldPlanner'
 import BeaconForm from '../components/BeaconForm.vue';
 import ElectricPoleSelect from '../components/ElectricPoleForm.vue';
+import HeatPipeForm from '../components/HeatPipeForm.vue';
 import PlannerForm from '../components/PlannerForm.vue';
 import PumpjacksForm from '../components/PumpjacksForm.vue';
 import { pick } from '../lib/helpers';
@@ -304,6 +318,6 @@ export default {
       initializeOilFieldStore(this.$route.query)
     }
   },
-  components: { ElectricPoleSelect, BeaconForm, PumpjacksForm, PlannerForm, ResponseErrorView, OilFieldPlanView, CopyButton, AlgorithmStep }
+  components: { ElectricPoleSelect, BeaconForm, PumpjacksForm, HeatPipeForm, PlannerForm, ResponseErrorView, OilFieldPlanView, CopyButton, AlgorithmStep }
 }
 </script>

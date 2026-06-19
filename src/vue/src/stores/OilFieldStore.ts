@@ -39,6 +39,7 @@ const defaults = {
   beaconStrategyFbeOriginal: false,
   beaconStrategyFbe: true,
   beaconStrategySnug: true,
+  addHeatPipes: false,
 };
 export type OilFieldStoreState = typeof defaults
 
@@ -80,6 +81,7 @@ const storeToQuery: StoreToQuery = {
   beaconStrategyFbeOriginal: 'beaconsFbeO',
   beaconStrategyFbe: 'beaconsFbe',
   beaconStrategySnug: 'beaconsSnug',
+  addHeatPipes: 'heatPipes',
 } as const;
 
 type OilFieldStore = Store<"OilFieldStore", OilFieldStoreState, {}, {}>
