@@ -1,4 +1,5 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using Knapcode.FactorioTools.Contract;
+using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Knapcode.FactorioTools.WebApp.Models;

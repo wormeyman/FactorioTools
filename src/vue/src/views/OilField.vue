@@ -289,6 +289,9 @@ export default {
       }
 
       this.submitting = true;
+      // A small non-zero delay reliably lets the browser paint the loading state
+      // before the synchronous (IL-interpreted) WASM call blocks the main thread.
+      await new Promise(r => setTimeout(r, 10))
       try {
         await api()
       } finally {

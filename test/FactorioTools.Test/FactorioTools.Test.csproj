@@ -43,6 +43,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FactorioTools.Serialization\FactorioTools.Serialization.csproj" />
+    <ProjectReference Include="..\..\src\FactorioTools.Contract\FactorioTools.Contract.csproj" />
   </ItemGroup>
 
   <ItemGroup>

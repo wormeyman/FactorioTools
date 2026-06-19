@@ -51,6 +51,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharp.lua.Launcher", "subm
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FactorioTools.Cli", "src\FactorioTools.Cli\FactorioTools.Cli.csproj", "{5262CC9E-421C-4A37-AE9D-F4408CA9A78C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FactorioTools.Contract", "src\FactorioTools.Contract\FactorioTools.Contract.csproj", "{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -217,6 +219,18 @@ Global
 		{5262CC9E-421C-4A37-AE9D-F4408CA9A78C}.Release|x64.Build.0 = Release|Any CPU
 		{5262CC9E-421C-4A37-AE9D-F4408CA9A78C}.Release|x86.ActiveCfg = Release|Any CPU
 		{5262CC9E-421C-4A37-AE9D-F4408CA9A78C}.Release|x86.Build.0 = Release|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Debug|x64.Build.0 = Debug|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Debug|x86.Build.0 = Debug|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Release|x64.ActiveCfg = Release|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Release|x64.Build.0 = Release|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Release|x86.ActiveCfg = Release|Any CPU
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -238,6 +252,7 @@ Global
 		{742421E3-AE7F-46DB-B569-5F3C5E261940} = {1C96F1C2-23C7-40C7-AA33-BB16311DFDDE}
 		{5A546BA8-1514-47DD-A850-0F8B9C2B8F79} = {1C96F1C2-23C7-40C7-AA33-BB16311DFDDE}
 		{5262CC9E-421C-4A37-AE9D-F4408CA9A78C} = {2237B275-4DF9-492E-A555-E38CE0DC0E12}
+		{58E9B8A2-9106-4F63-A7B9-CC74F907FAA4} = {2237B275-4DF9-492E-A555-E38CE0DC0E12}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8E6A453D-7E2E-4504-B5F6-474D9AEA13B8}

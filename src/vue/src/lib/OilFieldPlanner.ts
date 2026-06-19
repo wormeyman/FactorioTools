@@ -1,6 +1,7 @@
 import { OilFieldStoreState, useOilFieldStore } from "../stores/OilFieldStore";
-import { Api, BeaconStrategy, HttpResponse, OilFieldNormalizeRequest, OilFieldNormalizeResponse, OilFieldPlanRequest, OilFieldPlanResponse, PipeStrategy } from "./FactorioToolsApi";
+import { BeaconStrategy, HttpResponse, OilFieldNormalizeRequest, OilFieldNormalizeResponse, OilFieldPlanRequest, OilFieldPlanResponse, PipeStrategy } from "./FactorioToolsApi";
 import { getEntries } from "./helpers";
+import * as wasmPlanner from "./wasmPlanner";
 
 type RequestPropertyGetters = {
   [Property in keyof OilFieldPlanRequest]-?: (state: OilFieldStoreState) => Exclude<OilFieldPlanRequest[Property], undefined>
@@ -10,6 +11,7 @@ const requestPropertyGetters: RequestPropertyGetters = {
   addBeacons: (state) => state.addBeacons,
   addElectricPoles: (state) => state.addElectricPoles,
   addFbeOffset: (_) => false,
+  addHeatPipes: (_) => false,
   beaconEntityName: (state) => state.beaconEntityName.trim(),
   beaconHeight: (state) => state.beaconHeight,
   beaconModules: (state) => {
@@ -35,6 +37,7 @@ const requestPropertyGetters: RequestPropertyGetters = {
   electricPoleSupplyWidth: (state) => state.electricPoleSupplyWidth,
   electricPoleWidth: (state) => state.electricPoleWidth,
   electricPoleWireReach: (state) => state.electricPoleWireReach,
+  heatPipeEntityName: (_) => "heat-pipe",
   optimizePipes: (state) => state.optimizePipes,
   overlapBeacons: (state) => state.overlapBeacons,
   pipeStrategies: (state) => [
@@ -70,58 +73,33 @@ export interface ApiResult<Data> {
   data: Data
 }
 
-async function getApiResultOrError<Request, Data>(invokeApi: (factorio: Api<unknown>) => Promise<HttpResponse<Data, any>>): Promise<ApiResult<Data> | ApiError> {
-
-  const store = useOilFieldStore()
-  const baseUrl = store.useStagingApi ? 'https://factoriotools-staging.azurewebsites.net' : 'https://factoriotools.azurewebsites.net'
-  const factorio = new Api({ baseUrl })
-
+async function runWasm<Data>(
+  requestJson: string,
+  invoke: (json: string) => Promise<string>
+): Promise<ApiResult<Data> | ApiError> {
   try {
-    const response = await invokeApi(factorio);
-    return {
-      isError: false,
-      data: response.data
-    }
-  } catch (e) {
-    if (e instanceof Response) {
-      const response = e as HttpResponse<Request, any>;
+    const responseJson = await invoke(requestJson)
+    const parsed = JSON.parse(responseJson)
+
+    // Error envelope shape: { title, status, errors }
+    if (parsed && typeof parsed === 'object' && 'status' in parsed && 'errors' in parsed && !('blueprint' in parsed)) {
       const errors: Record<string, string[]> = {}
-      const title = response.error.title ?? `HTTP ${response.status} (${response.statusText})`
-
-      if (typeof response.error?.errors == 'object') {
-        for (const [key, values] of Object.entries(response.error.errors)) {
-          if (!Array.isArray(values)) {
-            continue
-          }
-
-          const currentErrors = []
-          for (const value of values) {
-            if (typeof value === 'string') {
-              currentErrors.push(value)
-            }
-          }
-
-          if (currentErrors.length > 0) {
-            errors[key] = currentErrors;
+      if (parsed.errors && typeof parsed.errors === 'object') {
+        for (const [key, values] of Object.entries(parsed.errors)) {
+          if (Array.isArray(values)) {
+            errors[key] = (values as unknown[]).filter((v): v is string => typeof v === 'string')
           }
         }
+      }
+      return { isError: true, title: parsed.title ?? 'An error occurred.', errors }
+    }
 
-        return { isError: true, title, errors, response }
-      } else {
-        return { isError: true, title, response }
-      }
-    } else if (typeof e === 'object' && e instanceof Error) {
-      return {
-        isError: true,
-        title: 'An unexpected error occurred.',
-        errorDetails: [e.stack ?? e.toString()]
-      }
-    } else {
-      return {
-        isError: true,
-        title: 'An unhandled error occurred.',
-        errorDetails: [JSON.stringify(e)]
-      }
+    return { isError: false, data: parsed as Data }
+  } catch (e) {
+    return {
+      isError: true,
+      title: 'An unexpected error occurred.',
+      errorDetails: [e instanceof Error ? (e.stack ?? e.toString()) : JSON.stringify(e)],
     }
   }
 }
@@ -129,8 +107,7 @@ async function getApiResultOrError<Request, Data>(invokeApi: (factorio: Api<unkn
 export async function normalize(): Promise<ApiResult<OilFieldNormalizeResponse> | ApiError> {
   const store = useOilFieldStore()
   const request: OilFieldNormalizeRequest = { blueprint: store.$state.inputBlueprint }
-
-  return await getApiResultOrError(factorio => factorio.api.v1OilFieldNormalizeCreate(request));
+  return await runWasm<OilFieldNormalizeResponse>(JSON.stringify(request), wasmPlanner.normalize)
 }
 
 export async function getPlan(): Promise<ApiResult<OilFieldPlanResponse> | ApiError> {
@@ -139,6 +116,5 @@ export async function getPlan(): Promise<ApiResult<OilFieldPlanResponse> | ApiEr
   for (const [requestKey, getter] of getEntries(requestPropertyGetters)) {
     (request as any)[requestKey] = getter(store.$state)
   }
-
-  return await getApiResultOrError(factorio => factorio.api.v1OilFieldPlanCreate(request));
+  return await runWasm<OilFieldPlanResponse>(JSON.stringify(request), wasmPlanner.plan)
 }

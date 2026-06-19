@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FactorioTools.Serialization\FactorioTools.Serialization.csproj" />
+    <ProjectReference Include="..\FactorioTools.Contract\FactorioTools.Contract.csproj" />
   </ItemGroup>
 
   <Target Name="CopyReferenceXml" BeforeTargets="Build">

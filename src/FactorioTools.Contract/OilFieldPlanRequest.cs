@@ -1,4 +1,4 @@
-﻿namespace Knapcode.FactorioTools.WebApp.Models;
+﻿namespace Knapcode.FactorioTools.Contract;
 
 /// <summary>
 /// The properties needed to generate an oil field plan.

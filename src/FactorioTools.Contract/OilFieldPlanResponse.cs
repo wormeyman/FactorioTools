@@ -1,6 +1,6 @@
 ﻿using Knapcode.FactorioTools.OilField;
 
-namespace Knapcode.FactorioTools.WebApp.Models;
+namespace Knapcode.FactorioTools.Contract;
 
 /// <summary>
 /// The resulting oil field plan.

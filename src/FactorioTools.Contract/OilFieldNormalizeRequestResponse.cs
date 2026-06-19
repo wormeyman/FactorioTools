@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Knapcode.FactorioTools.WebApp.Models;
+namespace Knapcode.FactorioTools.Contract;
 
 /// <summary>
 /// The properties needed to normalize a oil field blueprint.

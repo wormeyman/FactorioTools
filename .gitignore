@@ -401,3 +401,7 @@ FodyWeavers.xsd
 *.received.*
 .DS_Store
 /Factorio API DocsVersion 2.0.76 files
+
+# Generated WASM assets copied into the Vue public dir for local dev / build
+# (dotnet.js ships inside _framework for this Exe-style WASM bundle)
+src/vue/public/_framework/

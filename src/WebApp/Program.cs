@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Knapcode.FactorioTools.OilField;
+using Knapcode.FactorioTools.Contract;
 using Knapcode.FactorioTools.WebApp.Models;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.HttpOverrides;

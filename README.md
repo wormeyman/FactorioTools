@@ -14,7 +14,7 @@ Why did I build my own? Well, I didn't know of these tools before I started and 
 
 ### Check it out
 
-The tool is available here: https://factorio-tools.vercel.app/oil-field. There is an "Add sample" button (which drops one of my test blueprints in) and "View in FBE" buttons to view the input and output blueprints. Give it a try and let me know what you think!
+The tool is available here: https://factoriotools-5jg.pages.dev/oil-field. The planner runs entirely in your browser via .NET WebAssembly, so no blueprint data leaves your machine. There is an "Add sample" button (which drops one of my test blueprints in) and "View in FBE" buttons to view the input and output blueprints. Give it a try and let me know what you think!
 
 I've also attached a video of the thing in action.
 

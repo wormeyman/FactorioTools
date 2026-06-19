@@ -33,7 +33,16 @@ npm install
 npm run dev            # vite dev server
 npm run build          # regenerates TS API client from swagger, type-checks, builds
 npm run swagger-gen    # regenerate src/lib API client from ../WebApp/swagger.json
+npm run build-wasm     # publish BrowserWasm and copy _framework (incl. dotnet.js) into public/
 ```
+
+- The Vue app plans in-browser via .NET WASM. After changing C# planner code, run
+  `npm run build-wasm` in `src/vue` to refresh `public/_framework` (the bundle's
+  `dotnet.js` ships inside `_framework`). Requires the .NET 8 SDK plus the wasm-tools
+  workload; without a local .NET 8 SDK, publish via `./docker-build.sh` (the SDK image
+  also needs `python3` on PATH for the emscripten native relink step) and copy
+  `src/BrowserWasm/bin/Release/net8.0/browser-wasm/AppBundle/_framework` into
+  `src/vue/public/`. `npm run dev` / `npm run build` serve those assets.
 
 ### Building without a local .NET 8 SDK (Docker / OrbStack)
 
@@ -62,8 +71,8 @@ Pure planning logic with **no JSON/serialization dependencies** - this is intent
 Blueprint string parsing and emitting live here, separate from the core lib: `ParseBlueprint`, `GridToBlueprintString`, `NormalizeBlueprints`, plus the `System.Text.Json` source-gen context. Front-ends and the CLI reference this project, not just the core.
 
 ### Front-ends and hosts
-- `src/WebApp` - ASP.NET Core API (`OilFieldController`, routes under `api/v1/oil-field`: `normalize`, `plan`). Produces `swagger.json` consumed by the Vue client. Deployed via `Dockerfile`.
-- `src/vue` - the primary front-end (Vue 3 + Vite + Pinia, persisted settings). This is what's deployed to GitHub Pages / Vercel.
+- `src/WebApp` - ASP.NET Core API (`OilFieldController`, routes under `api/v1/oil-field`: `normalize`, `plan`; the actions delegate to `PlanOrchestrator`). Produces `swagger.json` consumed by the Vue client's `swagger-gen`. No longer deployed (the Azure target was retired when the front-end moved to in-browser WASM); kept for local API use, swagger generation, and the `Dockerfile` if self-hosting is wanted.
+- `src/vue` - the primary front-end (Vue 3 + Vite + Pinia, persisted settings). This is what's deployed to Cloudflare Pages (the `factoriotools` project, via `.github/workflows/deploy-cloudflare.yml`); it plans in-browser via the WASM bundle and no longer calls a hosted API.
 - `src/BrowserWasm` - runs the planner fully client-side via .NET WASM AOT (trimmed). Lets the SPA plan without the API.
 - `src/BlazorWebApp` - alternate Blazor host.
 - `src/FactorioTools.Cli` (`System.CommandLine`) - `oil-field` subcommands `sample`, `normalize`, `sandbox`. Output assembly is `Knapcode.FactorioTools.Sandbox`.
