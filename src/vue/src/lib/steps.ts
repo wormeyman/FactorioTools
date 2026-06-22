@@ -1,11 +1,11 @@
 import { BeaconStrategy, PipeStrategy } from "./FactorioToolsApi"
 
 export interface Step {
-  readonly text: string,
-  readonly class: string,
-  readonly shortDescription: string,
-  readonly longDescription: string,
-  readonly type?: string,
+  readonly text: string
+  readonly class: string
+  readonly shortDescription: string
+  readonly longDescription: string
+  readonly type?: string
 }
 
 function newStep(input: Step): Step {
@@ -18,7 +18,7 @@ function newPipeStep(input: Exclude<Step, "prefix">): Step {
     class: input.class,
     shortDescription: input.shortDescription,
     longDescription: input.longDescription,
-    type: "pipe strategy"
+    type: "pipe strategy",
   })
 }
 
@@ -28,7 +28,7 @@ function newBeaconStep(input: Exclude<Step, "prefix">): Step {
     class: input.class,
     shortDescription: input.shortDescription,
     longDescription: input.longDescription,
-    type: "beacon strategy"
+    type: "beacon strategy",
   })
 }
 
@@ -51,13 +51,15 @@ export const Steps = {
       text: "CC-DT",
       class: "text-bg-primary",
       shortDescription: "Joel's Connected Centers pipe planner, via Delaunay triangulation",
-      longDescription: "Joel's Connected Centers pipe planner algorithm using Delaunay triangulation to find adjacent pumpjacks",
+      longDescription:
+        "Joel's Connected Centers pipe planner algorithm using Delaunay triangulation to find adjacent pumpjacks",
     }),
     ConnectedCentersDelaunayMst: newPipeStep({
       text: "CC-DT-MST",
       class: "text-bg-primary",
       shortDescription: "Joel's Connected Centers pipe planner, via Delaunay triangulation and MST",
-      longDescription: "Joel's Connected Centers pipe planner algorithm using Delaunay triangulation and Prim's minimum spanning tree to find adjacent pumpjacks",
+      longDescription:
+        "Joel's Connected Centers pipe planner algorithm using Delaunay triangulation and Prim's minimum spanning tree to find adjacent pumpjacks",
     }),
     ConnectedCentersFlute: newPipeStep({
       text: "CC-FLUTE",
@@ -71,14 +73,16 @@ export const Steps = {
     text: "optimize",
     class: "text-bg-secondary",
     shortDescription: "Joel's pipe plan optimizer to improve a given pipe plan",
-    longDescription: "Joel's pipe plan optimizer, which rotates pumpjacks and straightens paths to further improve a given pipe plan",
+    longDescription:
+      "Joel's pipe plan optimizer, which rotates pumpjacks and straightens paths to further improve a given pipe plan",
   }),
 
   UndergroundPipesStep: newStep({
     text: "bury",
     class: "text-bg-danger",
     shortDescription: "Joel's underground pipe planner",
-    longDescription: "Joel's underground pipe planner algorithm, which converts stretches of pipes to underground pipes after planning the normal (overground) pipes",
+    longDescription:
+      "Joel's underground pipe planner algorithm, which converts stretches of pipes to underground pipes after planning the normal (overground) pipes",
   }),
 
   BeaconSteps: {
@@ -99,7 +103,8 @@ export const Steps = {
       text: "snug",
       class: "text-bg-primary",
       shortDescription: "Joel's beacon planner",
-      longDescription: "Joel's beacon planner algorithm, which prefers beacon positions closer to pumpjacks",
+      longDescription:
+        "Joel's beacon planner algorithm, which prefers beacon positions closer to pumpjacks",
     }),
   },
 
@@ -107,14 +112,16 @@ export const Steps = {
     text: "poles",
     class: "text-bg-warning",
     shortDescription: "Joel's electric pole planner",
-    longDescription: "Joel's electric pole planning algorithm, which adds electric poles around all powered entities and uses Bresenham's line to connect groups",
+    longDescription:
+      "Joel's electric pole planning algorithm, which adds electric poles around all powered entities and uses Bresenham's line to connect groups",
   }),
 
   HeatPipesStep: newStep({
     text: "heat",
     class: "text-bg-dark border border-secondary",
     shortDescription: "add heatpipes for Aquilo",
-    longDescription: "Routes a single connected heat pipe network adjacent to every pumpjack and pipe so the oil field does not freeze on Aquilo",
+    longDescription:
+      "Routes a single connected heat pipe network adjacent to every pumpjack and pipe so the oil field does not freeze on Aquilo",
   }),
 }
 
