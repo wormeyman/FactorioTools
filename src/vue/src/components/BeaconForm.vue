@@ -5,6 +5,15 @@
       <input type="checkbox" class="form-check-input" id="add-beacons" v-model="addBeacons" />
       <label class="form-check-label" for="add-beacons">Add beacons</label>
     </div>
+    <div
+      v-if="beaconHeatPipeConflictWarning"
+      class="alert alert-warning py-2 px-3 mt-2 mb-0"
+      role="alert"
+    >
+      Beacons and heat pipes can't be enabled together yet, so beacons stayed off. The planner can't
+      do both - they compete for the tiles next to pipes, and the heat pipes would get dropped
+      (freezing machines on Aquilo). Uncheck "Add heatpipes for Aquilo" to use beacons.
+    </div>
     <ModuleSelect
       v-if="addBeacons"
       class="mt-3"
@@ -115,7 +124,11 @@
 <script lang="ts">
 import { storeToRefs } from "pinia"
 import { pick } from "../lib/helpers"
-import { getDefaults, useOilFieldStore } from "../stores/OilFieldStore"
+import {
+  beaconHeatPipeConflictWarning,
+  getDefaults,
+  useOilFieldStore,
+} from "../stores/OilFieldStore"
 import ModuleSelect from "./ModuleSelect.vue"
 
 export default {
@@ -126,18 +139,21 @@ export default {
     },
   },
   data() {
-    return pick(
-      storeToRefs(useOilFieldStore()),
-      "addBeacons",
-      "overlapBeacons",
-      "beaconModule",
-      "beaconModuleIsCustom",
-      "beaconModuleSlots",
-      "beaconEntityName",
-      "beaconSupplyWidth",
-      "beaconSupplyHeight",
-      "beaconWidth",
-      "beaconHeight",
+    return Object.assign(
+      { beaconHeatPipeConflictWarning },
+      pick(
+        storeToRefs(useOilFieldStore()),
+        "addBeacons",
+        "overlapBeacons",
+        "beaconModule",
+        "beaconModuleIsCustom",
+        "beaconModuleSlots",
+        "beaconEntityName",
+        "beaconSupplyWidth",
+        "beaconSupplyHeight",
+        "beaconWidth",
+        "beaconHeight",
+      ),
     )
   },
   watch: {
