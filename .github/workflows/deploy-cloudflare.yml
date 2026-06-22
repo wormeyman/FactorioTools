@@ -32,9 +32,9 @@ jobs:
         run: dotnet publish src/BrowserWasm/BrowserWasm.csproj -c Release
       - name: Copy WASM assets into Vue public
         run: |
-          rm -rf "$BUILD_PATH/public/_framework"
+          rm -rf "$BUILD_PATH/public/framework"
           cp -r src/BrowserWasm/bin/Release/net8.0/browser-wasm/AppBundle/_framework \
-                "$BUILD_PATH/public/"
+                "$BUILD_PATH/public/framework"
       - name: Set up Node
         uses: actions/setup-node@v6
         with:

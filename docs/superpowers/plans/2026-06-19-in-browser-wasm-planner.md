@@ -956,6 +956,20 @@ After this branch merges to `main` (or via `workflow_dispatch`), confirm the run
 
 Open `https://factoriotools.pages.dev`, paste a sample blueprint, and confirm planning works with no network calls to `*.azurewebsites.net` (check the browser Network tab - only same-origin `_framework` requests).
 
+> **Post-launch correction (2026-06-22).** This plan (and the design spec) assumed
+> serving at the Pages root was enough for `dotnet.js` to resolve the `_framework`
+> bundle. It is not: **Cloudflare Pages strips leading-underscore directories on
+> deploy**, serving their contents from the root, so every `/_framework/*` request
+> 404s and the `import()` of `dotnet.js` throws `Failed to fetch dynamically
+> imported module`. Fix: the bundle is copied/served under `framework/` (no leading
+> underscore). Reflected in `src/vue/package.json` (`build-wasm`),
+> `.github/workflows/deploy-cloudflare.yml`, `src/vue/src/lib/wasmPlanner.ts` (the
+> `dotnet.js` import), and the `.gitignore` / lint ignores. Also note the project's
+> actual served subdomain is `factoriotools-5jg.pages.dev` (the bare
+> `factoriotools.pages.dev` name was unavailable), and the shipped workflow copies
+> from `AppBundle/_framework`, not `publish/wwwroot/`. CLAUDE.md is the current
+> source of truth.
+
 ---
 
 ## Verification (end-to-end)
