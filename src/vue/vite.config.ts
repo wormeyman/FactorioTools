@@ -58,6 +58,19 @@ export default defineConfig({
       '~bootstrap': path.resolve(__dirname, 'node_modules/bootstrap'),
     }
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // Bootstrap's SCSS still uses Sass functions that newer Dart Sass has
+        // deprecated. Mute deprecation warnings from dependencies (node_modules)
+        // while keeping them for our own SCSS.
+        quietDeps: true,
+        // src/style.scss uses Bootstrap 5's @import-based "import stack"; @use
+        // isn't cleanly supported until Bootstrap 6, so silence that category.
+        silenceDeprecations: ['import'],
+      },
+    },
+  },
   plugins: [vue()],
   define: define,
   base: basePath

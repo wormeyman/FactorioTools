@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-declare module '*.vue';
+declare module "*.vue"
 
 declare const __BASE_PATH__: string
 declare const __BUILD_DATE__: string

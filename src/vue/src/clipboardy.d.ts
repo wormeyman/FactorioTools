@@ -3,10 +3,10 @@
 // TypeScript's "bundler" module resolution (which respects "exports"), that
 // leaves the import untyped. Declare the small async surface we use until the
 // package ships a types export.
-declare module 'clipboardy' {
+declare module "clipboardy" {
   const clipboard: {
-    write(text: string): Promise<void>;
-    read(): Promise<string>;
-  };
-  export default clipboard;
+    write(text: string): Promise<void>
+    read(): Promise<string>
+  }
+  export default clipboard
 }

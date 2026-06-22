@@ -1,28 +1,34 @@
 <template>
   <fieldset class="border p-3 h-100">
     <legend>Pumpjacks</legend>
-    <ModuleSelect label="Pumpjack module" :showAdvancedOptions="showAdvancedOptions" showProductivityModules
-      :defaultValue="pumpjackModule" :defaultIsCustom="pumpjackModuleIsCustom" v-model="pumpjackModule"
-      v-model:isCustom="pumpjackModuleIsCustom" />
+    <ModuleSelect
+      label="Pumpjack module"
+      :showAdvancedOptions="showAdvancedOptions"
+      showProductivityModules
+      :defaultValue="pumpjackModule"
+      :defaultIsCustom="pumpjackModuleIsCustom"
+      v-model="pumpjackModule"
+      v-model:isCustom="pumpjackModuleIsCustom"
+    />
   </fieldset>
 </template>
-  
+
 <script lang="ts">
-import { storeToRefs } from 'pinia';
-import { pick } from '../lib/helpers';
-import { useOilFieldStore } from '../stores/OilFieldStore';
-import ModuleSelect from './ModuleSelect.vue';
+import { storeToRefs } from "pinia"
+import { pick } from "../lib/helpers"
+import { useOilFieldStore } from "../stores/OilFieldStore"
+import ModuleSelect from "./ModuleSelect.vue"
 
 export default {
   props: {
     showAdvancedOptions: {
       type: Boolean,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
-    return pick(storeToRefs(useOilFieldStore()), 'pumpjackModule', 'pumpjackModuleIsCustom');
+    return pick(storeToRefs(useOilFieldStore()), "pumpjackModule", "pumpjackModuleIsCustom")
   },
-  components: { ModuleSelect }
+  components: { ModuleSelect },
 }
 </script>

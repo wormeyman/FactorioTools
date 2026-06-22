@@ -1,6 +1,6 @@
 <template>
   <span v-if="showAsOption">Use </span>
-  <span class="badge" :title="shortDescription" :class="class">{{ text }}</span>
+  <span class="badge" :title="shortDescription" :class="$props.class">{{ text }}</span>
   <span v-if="showAsOption"> ({{ shortDescription }})</span>
 </template>
 
@@ -30,6 +30,6 @@ export default {
       type: Boolean,
       default: false,
     },
-  }
+  },
 }
 </script>

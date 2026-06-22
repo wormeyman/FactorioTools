@@ -1,0 +1,4 @@
+node_modules/
+dist/
+public/_framework/
+src/lib/FactorioToolsApi.ts

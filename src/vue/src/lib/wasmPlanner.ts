@@ -17,9 +17,7 @@ function bootExports(): Promise<Exports> {
       // Resolve dotnet.js relative to the deployed base (root '/').
       const dotnetUrl = `${__BASE_PATH__}_framework/dotnet.js`
       const { dotnet } = await import(/* @vite-ignore */ dotnetUrl)
-      const { getAssemblyExports, getConfig } = await dotnet
-        .withDiagnosticTracing(false)
-        .create()
+      const { getAssemblyExports, getConfig } = await dotnet.withDiagnosticTracing(false).create()
       const config = getConfig()
       return (await getAssemblyExports(config.mainAssemblyName)) as Exports
     })()
