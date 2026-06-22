@@ -32,6 +32,9 @@ jobs:
         run: dotnet publish src/BrowserWasm/BrowserWasm.csproj -c Release
       - name: Copy WASM assets into Vue public
         run: |
+          # public/ is gitignored and absent in a fresh checkout; create it so
+          # cp targets public/framework instead of flattening the bundle into public/.
+          mkdir -p "$BUILD_PATH/public"
           rm -rf "$BUILD_PATH/public/framework"
           cp -r src/BrowserWasm/bin/Release/net8.0/browser-wasm/AppBundle/_framework \
                 "$BUILD_PATH/public/framework"

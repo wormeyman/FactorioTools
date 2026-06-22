@@ -403,5 +403,5 @@ FodyWeavers.xsd
 /Factorio API DocsVersion 2.0.76 files
 
 # Generated WASM assets copied into the Vue public dir for local dev / build
-# (dotnet.js ships inside `framework`; not `_framework`, which Cloudflare Pages strips)
+# (the bundle, incl. dotnet.js, ships inside public/framework)
 src/vue/public/framework/

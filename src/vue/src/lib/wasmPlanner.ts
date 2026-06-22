@@ -1,9 +1,7 @@
 // Boots the .NET WASM runtime once and exposes the Plan/Normalize exports.
-// The bundle is published into /public by `npm run build-wasm` and served at the
-// site root. For this Exe-style WASM bundle, dotnet.js ships inside `framework`.
-// NOTE: the directory is deliberately NOT named `_framework` - Cloudflare Pages
-// strips leading-underscore directories and serves their contents from the root,
-// which 404s the `_framework/dotnet.js` import.
+// The bundle is published into public/framework by `npm run build-wasm` and
+// served at the site root, so dotnet.js lives at `framework/dotnet.js` and
+// resolves its sibling assets relative to itself.
 
 type Exports = {
   Interop: {
