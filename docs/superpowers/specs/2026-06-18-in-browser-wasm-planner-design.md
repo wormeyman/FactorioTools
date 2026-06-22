@@ -62,11 +62,14 @@ patch or scale.
    byte-for-byte compatible. A parity test guards this.
 4. **Direct Upload deploy.** A GitHub Actions workflow builds the WASM and the
    Vue site, then uploads the static output to the Cloudflare Pages project
-   **`factoriotools`** (served at `factoriotools.pages.dev`, root path) via
+   **`factoriotools`** (served at `factoriotools-5jg.pages.dev`, root path) via
    `wrangler pages deploy`. We do not use Cloudflare's Git-integration build
    because that build image has no .NET toolchain. Serving at the Pages root
-   keeps Vite `base` at `/` and lets `dotnet.js` resolve `_framework` at the
-   root, sidestepping the GitHub Pages subpath problem.
+   keeps Vite `base` at `/` and lets `dotnet.js` resolve its sibling assets at
+   the root. The bundle directory is named `framework`, not the .NET default
+   `_framework`: Cloudflare Pages strips leading-underscore directories on
+   deploy (serving their contents from the root), which 404s a
+   `_framework/dotnet.js` import. (Found post-launch; see CLAUDE.md.)
 5. **Node 24 LTS.** The Node 24 (Active LTS) bump already landed on `main`:
    `.github/workflows/ci.yml`, `.github/workflows/deploy-pages.yml`
    (`node-version`), and `src/vue/package.json` (`@types/node`). Remaining for
@@ -164,9 +167,11 @@ After:   Vue (static, Cloudflare Pages)  --in-process JS->WASM-->  .NET planner
   the JSON string WASM returns: a success payload maps to `ApiResult`, an error
   envelope maps to the existing `ApiError` (`{ isError, title, errors }`); the
   optional `response` (`HttpResponse`) field is simply absent on the WASM path.
-- The published WASM output (`_framework/*`, `dotnet.js`) is copied into
-  `src/vue/public/` so Vite ships it in `dist`. Served at the Pages root, the
-  loader resolves `_framework` at `/` (Vite `base` `/`).
+- The published WASM output (the `_framework/*` bundle incl. `dotnet.js`) is
+  copied into `src/vue/public/framework/` so Vite ships it in `dist`. Served at
+  the Pages root, the loader resolves `framework/dotnet.js` and its siblings at
+  `/` (Vite `base` `/`). The directory is renamed away from the underscore so
+  Cloudflare Pages does not strip it (see the deploy decision above).
 
 ### Data flow (plan request)
 
@@ -198,7 +203,8 @@ New workflow `deploy-cloudflare.yml`:
 2. `actions/setup-dotnet` honoring `global.json` (.NET 8) + `dotnet workload restore`
    (wasm-tools).
 3. `dotnet publish src/BrowserWasm -c Release` (AOT off).
-4. Copy the publish `_framework` output + `dotnet.js` into `src/vue/public/`.
+4. Copy the publish `_framework` bundle (incl. `dotnet.js`) into
+   `src/vue/public/framework/` (renamed to drop the leading underscore).
 5. `actions/setup-node` (Node 24), `npm install`, `npm run build` in `src/vue`.
 6. `wrangler pages deploy src/vue/dist --project-name=factoriotools` using a
    Cloudflare API token stored as a GitHub secret.
@@ -244,8 +250,11 @@ The exact publish output path is pinned during implementation against the actual
 - **First-load boot:** ~1-2s one-time runtime init in the browser, then cached.
   Acceptable for a tool opened deliberately; surface a loading state.
 - **Asset base path:** resolved by serving at the Pages root (Vite `base` `/`),
-  so `dotnet.js` resolves `_framework` at the root. This avoids the GitHub Pages
-  project-subpath problem that would otherwise need custom loader config.
+  so `dotnet.js` resolves its sibling assets at the root. This avoids the GitHub
+  Pages project-subpath problem that would otherwise need custom loader config.
+  Note: the bundle ships under `framework/`, not `_framework/` - Cloudflare Pages
+  strips leading-underscore directories, which 404s a `_framework/dotnet.js`
+  import (found post-launch and fixed by renaming the directory).
 - **Determinism:** the WASM host runs the same compiled core as the API, so plan
   output should be identical for identical input; the parity test guards this.
 
