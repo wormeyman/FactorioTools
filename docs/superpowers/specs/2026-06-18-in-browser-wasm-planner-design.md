@@ -66,10 +66,11 @@ patch or scale.
    `wrangler pages deploy`. We do not use Cloudflare's Git-integration build
    because that build image has no .NET toolchain. Serving at the Pages root
    keeps Vite `base` at `/` and lets `dotnet.js` resolve its sibling assets at
-   the root. The bundle directory is named `framework`, not the .NET default
-   `_framework`: Cloudflare Pages strips leading-underscore directories on
-   deploy (serving their contents from the root), which 404s a
-   `_framework/dotnet.js` import. (Found post-launch; see CLAUDE.md.)
+   the root. The bundle is copied into `src/vue/public/framework/`. Post-launch
+   gotcha: `src/vue/public/` is gitignored and absent in a fresh checkout, so the
+   copy step must `mkdir -p public` first - otherwise `cp -r _framework public/`
+   flattens the bundle into the `public/` root and the `framework/dotnet.js`
+   import 404s. (See CLAUDE.md.)
 5. **Node 24 LTS.** The Node 24 (Active LTS) bump already landed on `main`:
    `.github/workflows/ci.yml`, `.github/workflows/deploy-pages.yml`
    (`node-version`), and `src/vue/package.json` (`@types/node`). Remaining for
@@ -170,8 +171,9 @@ After:   Vue (static, Cloudflare Pages)  --in-process JS->WASM-->  .NET planner
 - The published WASM output (the `_framework/*` bundle incl. `dotnet.js`) is
   copied into `src/vue/public/framework/` so Vite ships it in `dist`. Served at
   the Pages root, the loader resolves `framework/dotnet.js` and its siblings at
-  `/` (Vite `base` `/`). The directory is renamed away from the underscore so
-  Cloudflare Pages does not strip it (see the deploy decision above).
+  `/` (Vite `base` `/`). The copy must `mkdir -p public` first (public/ is
+  gitignored/absent in CI) so the bundle is not flattened into the public root
+  (see the deploy decision above).
 
 ### Data flow (plan request)
 
@@ -252,9 +254,10 @@ The exact publish output path is pinned during implementation against the actual
 - **Asset base path:** resolved by serving at the Pages root (Vite `base` `/`),
   so `dotnet.js` resolves its sibling assets at the root. This avoids the GitHub
   Pages project-subpath problem that would otherwise need custom loader config.
-  Note: the bundle ships under `framework/`, not `_framework/` - Cloudflare Pages
-  strips leading-underscore directories, which 404s a `_framework/dotnet.js`
-  import (found post-launch and fixed by renaming the directory).
+  Note: the copy step must `mkdir -p public` before copying the bundle into
+  `public/framework/` - `public/` is gitignored and absent in CI, so without it
+  `cp -r _framework public/` flattens the bundle into the public root and the
+  `framework/dotnet.js` import 404s (found and fixed post-launch).
 - **Determinism:** the WASM host runs the same compiled core as the API, so plan
   output should be identical for identical input; the parity test guards this.
 
