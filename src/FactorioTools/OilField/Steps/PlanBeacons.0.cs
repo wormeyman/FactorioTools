@@ -7,11 +7,21 @@ public record BeaconPlannerResult(List<Location> Beacons, int Effects);
 
 public static class PlanBeacons
 {
-    public static List<BeaconSolution> Execute(Context context, ILocationSet pipes)
+    public static List<BeaconSolution> Execute(Context context, ILocationSet pipes, ILocationSet? heatPipes = null)
     {
         foreach (var pipe in pipes.EnumerateItems())
         {
             context.Grid.AddEntity(pipe, new TemporaryEntity(context.Grid.GetId()));
+        }
+
+        // On Aquilo the heat network is routed first and the contested tiles next to pipes/pumpjacks are reserved for
+        // it. Occupy them so the beacon strategies route around the heat pipes (heat wins; beacons take what's left).
+        if (heatPipes is not null)
+        {
+            foreach (var heatPipe in heatPipes.EnumerateItems())
+            {
+                context.Grid.AddEntity(heatPipe, new TemporaryEntity(context.Grid.GetId()));
+            }
         }
 
         var solutions = new List<BeaconSolution>(context.Options.BeaconStrategies.Count);
@@ -40,6 +50,14 @@ public static class PlanBeacons
         foreach (var pipe in pipes.EnumerateItems())
         {
             context.Grid.RemoveEntity(pipe);
+        }
+
+        if (heatPipes is not null)
+        {
+            foreach (var heatPipe in heatPipes.EnumerateItems())
+            {
+                context.Grid.RemoveEntity(heatPipe);
+            }
         }
 
         if (solutions.Count == 0)

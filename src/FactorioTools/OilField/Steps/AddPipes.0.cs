@@ -40,6 +40,19 @@ public static class AddPipes
 
         AddPipeEntities.Execute(context, bestSolution.Pipes, bestSolution.UndergroundPipes);
 
+        // Place the heat network before beacons so it claims the contested tiles next to pipes/pumpjacks. The beacons
+        // for this solution were already planned to avoid these tiles (see GetSolution). AddHeatPipes.Execute will then
+        // be a no-op in the Planner because context.HeatPipes is set.
+        if (bestSolution.HeatPipes is not null)
+        {
+            foreach (var location in bestSolution.HeatPipes.EnumerateItems())
+            {
+                context.Grid.AddEntity(location, new HeatPipe(context.Grid.GetId()));
+            }
+
+            context.HeatPipes = bestSolution.HeatPipes;
+        }
+
         if (bestBeacons is not null)
         {
             // Visualizer.Show(context.Grid, bestSolution.Beacons.Select(c => (DelaunatorSharp.IPoint)new DelaunatorSharp.Point(c.X, c.Y)), Array.Empty<DelaunatorSharp.IEdge>());
@@ -168,11 +181,21 @@ public static class AddPipes
         }
 
         var solutionGroups = result.Data!;
+        // When heat pipes and beacons are both enabled, heat is the hard constraint: drop any pipe layout that can't be
+        // fully heated so a heatable layout is selected. If none are heatable the plan list ends up empty and the normal
+        // "at least one pipe strategy" error fires - the same outcome heat-only planning would reach on that field.
+        var requireHeatFeasible = context.Options.AddHeatPipes && context.Options.AddBeacons;
+
         var plans = new List<PlanInfo>();
         foreach ((var solutionGroup, var groupNumber) in solutionGroups)
         {
             foreach (var solution in solutionGroup)
             {
+                if (requireHeatFeasible && !solution.HeatFeasible)
+                {
+                    continue;
+                }
+
                 if (solution.BeaconSolutions is null)
                 {
                     foreach (var strategy in solution.Strategies)
@@ -392,10 +415,21 @@ public static class AddPipes
             undergroundPipes = PlanUndergroundPipes.Execute(context, optimizedPipes);
         }
 
-        List<BeaconSolution>? beaconSolutions = null;
-        if (context.Options.AddBeacons)
+        // On Aquilo (heat pipes enabled) route the heat network first so it claims the contested tiles next to pipes
+        // and pumpjacks; beacon planning then routes around it. Heat coverage is the hard constraint - beacons are
+        // best-effort and may be reduced when heat needs the space. A pipe layout that cannot be fully heated is marked
+        // heat-infeasible so plan selection prefers a heatable layout (see GetAllPlans).
+        ILocationSet? heatPipes = null;
+        var heatFeasible = true;
+        if (context.Options.AddHeatPipes && context.Options.AddBeacons)
         {
-            beaconSolutions = PlanBeacons.Execute(context, optimizedPipes);
+            heatPipes = AddHeatPipes.Route(context, optimizedPipes, out heatFeasible);
+        }
+
+        List<BeaconSolution>? beaconSolutions = null;
+        if (context.Options.AddBeacons && heatFeasible)
+        {
+            beaconSolutions = PlanBeacons.Execute(context, optimizedPipes, heatPipes);
         }
 
         Validate.NoOverlappingEntities(context, optimizedPipes, undergroundPipes, beaconSolutions);
@@ -413,6 +447,8 @@ public static class AddPipes
             Pipes = optimizedPipes,
             UndergroundPipes = undergroundPipes,
             BeaconSolutions = beaconSolutions,
+            HeatPipes = heatPipes,
+            HeatFeasible = heatFeasible,
         };
     }
 
@@ -499,6 +535,8 @@ public static class AddPipes
         public required ILocationSet Pipes { get; set; }
         public required ILocationDictionary<Direction>? UndergroundPipes { get; set; }
         public required List<BeaconSolution>? BeaconSolutions { get; set; }
+        public required ILocationSet? HeatPipes { get; set; }
+        public required bool HeatFeasible { get; set; }
     }
 
     private class LocationSetComparer : IEqualityComparer<ILocationSet>

@@ -153,6 +153,72 @@ public class PlannerTest : BasePlannerTest
     }
 
     [Fact]
+    public async Task AddsHeatPipesAndBeaconsTogetherForAquilo()
+    {
+        // Arrange: heat pipes are the hard constraint, beacons are best-effort. Both enabled at once
+        // must still produce a valid, fully heated field (heat wins; beacons fill the leftover space).
+        var options = OilFieldOptions.ForMediumElectricPole;
+        options.ValidateSolution = true;
+        options.AddHeatPipes = true;
+        options.AddBeacons = true;
+        var blueprint = ParseBlueprint.Execute(SmallListBlueprintStrings[0]);
+
+        // Act: must not throw - heat coverage and connectivity are validated inside Execute.
+        var result = Planner.Execute(options, blueprint);
+
+        // Assert: the field is fully heated and at least some beacons coexisted with the heat network.
+        Assert.NotNull(result.Context.HeatPipes);
+        Assert.NotEmpty(result.Context.Grid.GetEntities().OfType<HeatPipe>());
+        Assert.NotEmpty(result.Context.Grid.GetEntities().OfType<BeaconCenter>());
+#if USE_VERIFY
+        await Verify(GetGridString(result));
+#else
+        await Task.Yield();
+#endif
+    }
+
+    public static IEnumerable<object[]> SmallListBlueprintIndexes = Enumerable
+        .Range(0, SmallListBlueprintStrings.Count)
+        .Select(i => new object[] { i });
+
+    [Theory]
+    [MemberData(nameof(SmallListBlueprintIndexes))]
+    public void EnablingBeaconsNeverBreaksAchievableHeatCoverage(int index)
+    {
+        // Heat pipes are the hard constraint; beacons are best-effort. The coexistence guarantee is: turning beacons ON
+        // must never break a field that heat-only could fully heat. (Whether a field is heatable at all is a separate,
+        // pre-existing property of the heat router - many dense fields cannot be fully heated even with beacons off, so
+        // those are out of scope here.) When both are on, the planner routes heat first and only selects pipe layouts it
+        // can fully heat, so any field heatable beacons-off stays fully heated with beacons on.
+        var blueprintString = SmallListBlueprintStrings[index];
+
+        var heatOnly = OilFieldOptions.ForMediumElectricPole;
+        heatOnly.ValidateSolution = true;
+        heatOnly.AddHeatPipes = true;
+        heatOnly.AddBeacons = false;
+        try
+        {
+            Planner.Execute(heatOnly, ParseBlueprint.Execute(blueprintString));
+        }
+        catch (FactorioToolsException)
+        {
+            // This field cannot be fully heated even without beacons - a pre-existing heat-router limitation, not a
+            // coexistence regression. Skip it.
+            return;
+        }
+
+        var bothOn = OilFieldOptions.ForMediumElectricPole;
+        bothOn.ValidateSolution = true;
+        bothOn.AddHeatPipes = true;
+        bothOn.AddBeacons = true;
+
+        var result = Planner.Execute(bothOn, ParseBlueprint.Execute(blueprintString));
+
+        Assert.NotNull(result.Context.HeatPipes);
+        Assert.NotEmpty(result.Context.Grid.GetEntities().OfType<HeatPipe>());
+    }
+
+    [Fact]
     public void EmitsHeatPipesInTwoPointZeroBlueprint()
     {
         // Arrange

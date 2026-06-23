@@ -28,14 +28,16 @@ public static class AddHeatPipes
 
     public static void Execute(Context context)
     {
-        if (!context.Options.AddHeatPipes)
+        // When beacons are also enabled, the heat network was already routed (before beacon planning) and
+        // placed during AddPipes so beacons could route around it. Don't re-route over the placed entities.
+        if (!context.Options.AddHeatPipes || context.HeatPipes is not null)
         {
             return;
         }
 
         var grid = context.Grid;
 
-        // 1. Collect the targets that must be heated: every pipe tile, and every pumpjack center.
+        // Collect the targets that must be heated: every pipe tile, and every pumpjack center.
         var pipeTiles = context.GetLocationSet(allowEnumerate: true);
         foreach (var location in grid.EntityLocations.EnumerateItems())
         {
@@ -45,7 +47,53 @@ public static class AddHeatPipes
             }
         }
 
-        // 2. Build candidate heat pipe tiles (empty tiles that cover at least one target) and what each one covers.
+        var chosen = RouteCore(context, pipeTiles, out _);
+
+        // Place the heat pipe entities.
+        foreach (var location in chosen.EnumerateItems())
+        {
+            grid.AddEntity(location, new HeatPipe(grid.GetId()));
+        }
+
+        context.HeatPipes = chosen;
+    }
+
+    /// <summary>
+    /// Routes the heat pipe network for a given set of pipe tiles and returns the chosen heat tiles without placing any
+    /// entities. The caller must have the pipe tiles occupying the grid (so they are not considered empty) - this lets
+    /// beacon planning route heat first and place beacons around it. The grid is left unchanged.
+    /// <paramref name="coversAllTargets"/> is false when this pipe layout cannot be fully heated (some pipe or pumpjack
+    /// has no reachable empty tile), so the caller can prefer a heatable layout - heat is the hard constraint.
+    /// </summary>
+    public static ILocationSet Route(Context context, ILocationSet pipeTiles, out bool coversAllTargets)
+    {
+        var grid = context.Grid;
+
+        // Occupy the pipe tiles so heat tiles are not chosen on top of them, then route and restore the grid.
+        foreach (var pipe in pipeTiles.EnumerateItems())
+        {
+            grid.AddEntity(pipe, new TemporaryEntity(grid.GetId()));
+        }
+
+        var chosen = RouteCore(context, pipeTiles, out coversAllTargets);
+
+        foreach (var pipe in pipeTiles.EnumerateItems())
+        {
+            grid.RemoveEntity(pipe);
+        }
+
+        return chosen;
+    }
+
+    /// <summary>
+    /// The core greedy routing: builds candidate heat tiles from the targets and grows one connected network covering
+    /// them. Assumes the pipe tiles (and pumpjacks) already occupy the grid so candidate tiles are genuinely empty.
+    /// </summary>
+    private static ILocationSet RouteCore(Context context, ILocationSet pipeTiles, out bool coversAllTargets)
+    {
+        var grid = context.Grid;
+
+        // Build candidate heat pipe tiles (empty tiles that cover at least one target) and what each one covers.
         var candidates = new List<Location>();
         var coveredPipes = context.GetLocationDictionary<List<Location>>();
         var coveredCenters = context.GetLocationDictionary<List<Location>>();
@@ -88,26 +136,22 @@ public static class AddHeatPipes
 
         var chosen = context.GetLocationSet(allowEnumerate: true);
 
+        var uncoveredPipes = context.GetLocationSet(allowEnumerate: true);
+        uncoveredPipes.UnionWith(pipeTiles);
+        var uncoveredCenters = context.GetLocationSet(allowEnumerate: true);
+        for (var c = 0; c < context.Centers.Count; c++)
+        {
+            uncoveredCenters.Add(context.Centers[c]);
+        }
+
         if (candidates.Count > 0)
         {
-            var uncoveredPipes = context.GetLocationSet(allowEnumerate: true);
-            uncoveredPipes.UnionWith(pipeTiles);
-            var uncoveredCenters = context.GetLocationSet(allowEnumerate: true);
-            for (var c = 0; c < context.Centers.Count; c++)
-            {
-                uncoveredCenters.Add(context.Centers[c]);
-            }
-
             Grow(context, chosen, candidates, coveredPipes, coveredCenters, uncoveredPipes, uncoveredCenters);
         }
 
-        // 3. Place the heat pipe entities.
-        foreach (var location in chosen.EnumerateItems())
-        {
-            grid.AddEntity(location, new HeatPipe(grid.GetId()));
-        }
+        coversAllTargets = uncoveredPipes.Count == 0 && uncoveredCenters.Count == 0;
 
-        context.HeatPipes = chosen;
+        return chosen;
     }
 
     /// <summary>
