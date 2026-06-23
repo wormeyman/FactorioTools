@@ -75,6 +75,18 @@ public static class AddPipes
         var sortedPlans = result.Data!;
         sortedPlans.Sort((a, b) =>
         {
+            // When heat is on it is the hard constraint: fewer unheated targets = better, ahead of everything else.
+            if (context.Options.AddHeatPipes)
+            {
+                var aUnheated = a.Pipes.UncoveredPipes.Count + a.Pipes.UncoveredCenters.Count;
+                var bUnheated = b.Pipes.UncoveredPipes.Count + b.Pipes.UncoveredCenters.Count;
+                var heat = aUnheated.CompareTo(bUnheated);
+                if (heat != 0)
+                {
+                    return heat;
+                }
+            }
+
             // more effects = better
             var c = b.Plan.BeaconEffectCount.CompareTo(a.Plan.BeaconEffectCount);
             if (c != 0)
@@ -181,21 +193,12 @@ public static class AddPipes
         }
 
         var solutionGroups = result.Data!;
-        // When heat pipes are enabled, heat is the hard constraint: drop any pipe layout that can't be fully heated so a
-        // heatable layout is selected (whether or not beacons are also on). If none are heatable the plan list ends up
-        // empty and the normal "at least one pipe strategy" error fires for that field.
-        var requireHeatFeasible = context.Options.AddHeatPipes;
 
         var plans = new List<PlanInfo>();
         foreach ((var solutionGroup, var groupNumber) in solutionGroups)
         {
             foreach (var solution in solutionGroup)
             {
-                if (requireHeatFeasible && !solution.HeatFeasible)
-                {
-                    continue;
-                }
-
                 if (solution.BeaconSolutions is null)
                 {
                     foreach (var strategy in solution.Strategies)
@@ -415,17 +418,19 @@ public static class AddPipes
             undergroundPipes = PlanUndergroundPipes.Execute(context, optimizedPipes);
         }
 
-        // On Aquilo (heat pipes enabled) route the heat network for this layout up front so plan selection can prefer a
-        // layout it can actually fully heat - heat coverage is the hard constraint. Routing per layout matters because
-        // the fewest-pipe layout is not always heatable, while another strategy's layout often is. When beacons are also
-        // on, routing heat first lets it claim the contested tiles next to pipes/pumpjacks and beacons route around it
-        // (best-effort, possibly reduced). A layout that cannot be fully heated is marked heat-infeasible so selection
-        // drops it in favor of a heatable one (see GetAllPlans).
+        // On Aquilo (heat pipes enabled) route the heat network for this layout up front so plan selection can rank by
+        // heat coverage - heat is the hard constraint. Routing per layout matters because the fewest-pipe layout is not
+        // always heatable, while another strategy's layout often is. When beacons are also on, routing heat first lets
+        // it claim the contested tiles next to pipes/pumpjacks and beacons route around it (best-effort, possibly
+        // reduced). Layouts that cannot be fully heated are still kept but ranked last so a heatable one is preferred.
         ILocationSet? heatPipes = null;
+        ILocationSet uncoveredPipes = EmptyLocationSet.Instance;
+        ILocationSet uncoveredCenters = EmptyLocationSet.Instance;
         var heatFeasible = true;
         if (context.Options.AddHeatPipes)
         {
-            heatPipes = AddHeatPipes.Route(context, optimizedPipes, out heatFeasible);
+            heatPipes = AddHeatPipes.Route(context, optimizedPipes, out uncoveredPipes, out uncoveredCenters);
+            heatFeasible = uncoveredPipes.Count == 0 && uncoveredCenters.Count == 0;
         }
 
         List<BeaconSolution>? beaconSolutions = null;
@@ -451,6 +456,8 @@ public static class AddPipes
             BeaconSolutions = beaconSolutions,
             HeatPipes = heatPipes,
             HeatFeasible = heatFeasible,
+            UncoveredPipes = uncoveredPipes,
+            UncoveredCenters = uncoveredCenters,
         };
     }
 
@@ -539,6 +546,8 @@ public static class AddPipes
         public required List<BeaconSolution>? BeaconSolutions { get; set; }
         public required ILocationSet? HeatPipes { get; set; }
         public required bool HeatFeasible { get; set; }
+        public required ILocationSet UncoveredPipes { get; set; }
+        public required ILocationSet UncoveredCenters { get; set; }
     }
 
     private class LocationSetComparer : IEqualityComparer<ILocationSet>

@@ -4,6 +4,9 @@ namespace Knapcode.FactorioTools.OilField;
 
 public class PlannerTest : BasePlannerTest
 {
+    // A small-list blueprint with no fully-heatable pipe layout (every candidate layout leaves a boxed-in tile).
+    private const int BoxedInHeatIndex = 55;
+
     public static IReadOnlyList<string> BlueprintsWithIsolatedAreas = new[]
     {
         "0eJyU1ctugzAQheF3mbUXeGwg8CpVVRFiVW6Dg7hURYh3L2BX6sUSh2WI82Xi8OOZrvfRtJ11A5Uz2frheiqfZurtq6vu2zVXNYZKasemfavqdxI0TO12xQ6moUWQdTfzSaVcngUZN9jBGm/sL6YXNzZX060LRMRqH/36gYfbvmlFWAua1qVqdW+2M7V/L1nEP44BTjHMKYTLYU4jXOK57DfHES49MR3AZQAnA5cf/9gc4HTmucsxd0FulDBdccwVyN4pmJMJsnne4wTwTnTBEvCgMBLcO1EGM+AhaXCYDyhNIm2E24U14CFxfO+fPm5NInUojc+H5KHj80U9pA+Nz8dIHxz6AB4ujPShiqgX+z8Y6YPT3VNAHwz1wbgHHR3+aarSv956Bu/ncvnjYBf0Ybo+LFi+AAAA//8DAEf3mj4=",
@@ -387,6 +390,23 @@ public class PlannerTest : BasePlannerTest
         }
 
         Assert.True(heated >= 35, $"expected heat-only to fully heat at least 35 of {SmallListBlueprintStrings.Count}, got {heated}");
+    }
+
+    [Fact]
+    public void HeatOnPartialFieldReportsGapInsteadOfThrowing()
+    {
+        // A boxed-in field has no fully-heatable pipe layout. Before this change the planner threw
+        // "At least one pipe strategy must be used."; now it returns the most-heatable layout and
+        // reports the unheated gap on the summary. (Task 2 drives the gap to zero via dropping.)
+        var options = OilFieldOptions.ForMediumElectricPole;
+        options.AddHeatPipes = true;
+        options.AddBeacons = false;
+        // ValidateSolution stays false here: we are asserting the production path that does not throw.
+
+        var index = BoxedInHeatIndex;
+        var (_, summary) = Planner.Execute(options, ParseBlueprint.Execute(SmallListBlueprintStrings[index]));
+
+        Assert.True(summary.UnheatedPumpjacks + summary.UnheatedPipes > 0, "expected a boxed-in field to report an unheated gap");
     }
 
 }

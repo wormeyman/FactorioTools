@@ -194,7 +194,7 @@ public static class Planner
             Validate.AllEntitiesHavePower(context);
         }
 
-        var missingPumpjacks = initialPumpjackCount - context.CenterToTerminals.Count;
+        var missingPumpjacks = initialPumpjackCount - context.CenterToTerminals.Count - context.HeatDroppedPumpjacks;
         if (missingPumpjacks > 0)
         {
             throw new FactorioToolsException("The initial number of pumpjacks does not match the final pumpjack count.");
@@ -221,12 +221,15 @@ public static class Planner
             }
         }
 
-        Validate.HeatPipesCoverAllTargets(context);
+        Validate.CountUnheatedTargets(context, out var unheatedPumpjacks, out var unheatedPipes);
         Validate.HeatPipesAreConnected(context);
 
         var planSummary = new OilFieldPlanSummary(
             missingPumpjacks,
             rotatedPumpjacks,
+            context.HeatDroppedPumpjacks,
+            unheatedPumpjacks,
+            unheatedPipes,
             selectedPlans,
             alternatePlans,
             unusedPlans);

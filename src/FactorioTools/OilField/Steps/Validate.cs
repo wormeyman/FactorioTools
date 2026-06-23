@@ -161,57 +161,55 @@ public static class Validate
         }
     }
 
-    public static void HeatPipesCoverAllTargets(Context context)
+    public static void CountUnheatedTargets(Context context, out int unheatedPumpjacks, out int unheatedPipes)
     {
-        if (context.Options.ValidateSolution && context.Options.AddHeatPipes)
+        unheatedPumpjacks = 0;
+        unheatedPipes = 0;
+
+        if (!context.Options.AddHeatPipes || context.HeatPipes is null)
         {
-            if (context.HeatPipes is null)
-            {
-                throw new FactorioToolsException("Heat pipes were requested but none were routed.");
-            }
+            return;
+        }
 
 #if USE_STACKALLOC && LOCATION_AS_STRUCT
-            Span<Location> adjacent = stackalloc Location[4];
+        Span<Location> adjacent = stackalloc Location[4];
 #else
-            Span<Location> adjacent = new Location[4];
+        Span<Location> adjacent = new Location[4];
 #endif
 
-            // Every pipe tile must be orthogonally adjacent to a heat pipe.
-            foreach (var location in context.Grid.EntityLocations.EnumerateItems())
+        foreach (var location in context.Grid.EntityLocations.EnumerateItems())
+        {
+            if (context.Grid[location] is not Pipe)
             {
-                if (context.Grid[location] is not Pipe)
-                {
-                    continue;
-                }
-
-                context.Grid.GetAdjacent(adjacent, location);
-                var heated = false;
-                for (var i = 0; i < adjacent.Length && !heated; i++)
-                {
-                    heated = adjacent[i].IsValid && context.Grid[adjacent[i]] is HeatPipe;
-                }
-
-                if (!heated)
-                {
-                    throw new FactorioToolsException($"A pipe at {location} is not adjacent to a heat pipe and would freeze on Aquilo.");
-                }
+                continue;
             }
 
-            // Every pumpjack must have a heat pipe somewhere in the ring around its 3x3 footprint.
-            for (var c = 0; c < context.Centers.Count; c++)
+            context.Grid.GetAdjacent(adjacent, location);
+            var heated = false;
+            for (var i = 0; i < adjacent.Length && !heated; i++)
             {
-                var center = context.Centers[c];
-                var heated = false;
-                for (var i = 0; i < AddHeatPipes.PumpjackRingOffsets.Length && !heated; i++)
-                {
-                    var ringLocation = center.Translate(AddHeatPipes.PumpjackRingOffsets[i]);
-                    heated = context.Grid.IsInBounds(ringLocation) && context.Grid[ringLocation] is HeatPipe;
-                }
+                heated = adjacent[i].IsValid && context.Grid[adjacent[i]] is HeatPipe;
+            }
 
-                if (!heated)
-                {
-                    throw new FactorioToolsException($"A pumpjack at {center} is not adjacent to a heat pipe and would freeze on Aquilo.");
-                }
+            if (!heated)
+            {
+                unheatedPipes++;
+            }
+        }
+
+        for (var c = 0; c < context.Centers.Count; c++)
+        {
+            var center = context.Centers[c];
+            var heated = false;
+            for (var i = 0; i < AddHeatPipes.PumpjackRingOffsets.Length && !heated; i++)
+            {
+                var ringLocation = center.Translate(AddHeatPipes.PumpjackRingOffsets[i]);
+                heated = context.Grid.IsInBounds(ringLocation) && context.Grid[ringLocation] is HeatPipe;
+            }
+
+            if (!heated)
+            {
+                unheatedPumpjacks++;
             }
         }
     }
