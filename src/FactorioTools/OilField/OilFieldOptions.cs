@@ -147,8 +147,10 @@ public class OilFieldOptions
     /// Whether or not to route a heat pipe network adjacent to every pumpjack and pipe. This is required on Aquilo
     /// (Factorio 2.0 / Space Age) where unheated entities freeze. When enabled, the output blueprint is emitted in the
     /// Factorio 2.0 version format (2.0 directions and module item format). The planner only routes the heat pipe network
-    /// and leaves it for the user to connect a heat source (heating tower or reactor). Beacons (see <see cref="AddBeacons"/>)
-    /// compete with heat pipes for the tiles next to pipes, so coverage is best with beacons off.
+    /// and leaves it for the user to connect a heat source (heating tower or reactor). Heat pipes and beacons
+    /// (see <see cref="AddBeacons"/>) can be enabled together: heat is the hard constraint, so the planner routes the
+    /// heat network first and then places beacons around it, choosing a pipe layout it can fully heat. Beacons are
+    /// best-effort and may be reduced (even to none) on tight fields where heat needs the contested tiles.
     /// </summary>
     public bool AddHeatPipes { get; set; } = false;
 
