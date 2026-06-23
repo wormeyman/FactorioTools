@@ -22,15 +22,10 @@ public static class AddPipes
         Solution bestSolution;
         BeaconSolution? bestBeacons;
 
-        var result = GetBestSolution(context);
-        if (result.Exception is NoPathBetweenTerminalsException && !eliminateStrandedTerminals)
+        var result = SelectBestSolution(context, eliminateStrandedTerminals);
+        if (result.Exception is not null)
         {
-            EliminateStrandedTerminals(context);
-            result = GetBestSolution(context);
-            if (result.Exception is not null)
-            {
-                throw result.Exception;
-            }
+            throw result.Exception;
         }
 
         (selectedPlans, alternatePlans, unusedPlans, bestSolution, bestBeacons) = result.Data!;
@@ -63,6 +58,142 @@ public static class AddPipes
     }
 
     private record SolutionInfo(List<OilFieldPlan> SelectedPlans, List<OilFieldPlan> AltnernatePlans, List<OilFieldPlan> UnusedPlans, Solution BestSolution, BeaconSolution? BestBeacons);
+
+    private static Result<SolutionInfo> SelectBestSolution(Context context, bool eliminateStrandedTerminals)
+    {
+        // The full pumpjack set's planning maps; the drop loop mutates these in place so each replan
+        // (which clones context.CenterToTerminals at the start of GetSolutionGroups) sees the reduced set.
+        var centerToTerminals = context.CenterToTerminals;
+        var locationToTerminals = context.LocationToTerminals;
+
+        while (true)
+        {
+            context.CenterToTerminals = centerToTerminals;
+            context.LocationToTerminals = locationToTerminals;
+
+            var result = GetBestSolution(context);
+            if (result.Exception is NoPathBetweenTerminalsException && !eliminateStrandedTerminals)
+            {
+                EliminateStrandedTerminals(context);
+                result = GetBestSolution(context);
+            }
+
+            if (result.Exception is not null)
+            {
+                return result;
+            }
+
+            var best = result.Data!.BestSolution;
+            if (!context.Options.AddHeatPipes
+                || best.UncoveredPipes.Count + best.UncoveredCenters.Count == 0)
+            {
+                return result;
+            }
+
+            var dropCenter = ChooseDropCandidate(context, best);
+            if (!dropCenter.IsValid)
+            {
+                // Nothing left to drop (e.g. the last pumpjack is boxed by avoid entities). Accept the residual;
+                // it is reported on the summary and surfaced as a UI warning.
+                return result;
+            }
+
+            DropPumpjack(context, centerToTerminals, locationToTerminals, dropCenter);
+            context.HeatDroppedPumpjacks++;
+        }
+    }
+
+    // Minimal-drop: remove one pumpjack per pass. Prefer a pumpjack that itself cannot be heated; otherwise the
+    // pumpjack nearest a stuck (unheated) pipe tile. Deterministic tie-break on (Y, X) for Lua stability.
+    private static Location ChooseDropCandidate(Context context, Solution best)
+    {
+        if (best.UncoveredCenters.Count > 0)
+        {
+            var chosenCenter = Location.Invalid;
+            foreach (var center in best.UncoveredCenters.EnumerateItems())
+            {
+                if (IsBefore(center, chosenCenter))
+                {
+                    chosenCenter = center;
+                }
+            }
+
+            return chosenCenter;
+        }
+
+        if (best.UncoveredPipes.Count == 0)
+        {
+            return Location.Invalid;
+        }
+
+        var chosen = Location.Invalid;
+        var chosenDistance = int.MaxValue;
+        for (var i = 0; i < context.Centers.Count; i++)
+        {
+            var center = context.Centers[i];
+            var distance = int.MaxValue;
+            foreach (var pipe in best.UncoveredPipes.EnumerateItems())
+            {
+                var d = Math.Abs(center.X - pipe.X) + Math.Abs(center.Y - pipe.Y);
+                if (d < distance)
+                {
+                    distance = d;
+                }
+            }
+
+            if (distance < chosenDistance || (distance == chosenDistance && IsBefore(center, chosen)))
+            {
+                chosenDistance = distance;
+                chosen = center;
+            }
+        }
+
+        return chosen;
+    }
+
+    private static bool IsBefore(Location a, Location b)
+    {
+        if (!b.IsValid)
+        {
+            return true;
+        }
+
+        if (a.Y != b.Y)
+        {
+            return a.Y < b.Y;
+        }
+
+        return a.X < b.X;
+    }
+
+    private static void DropPumpjack(
+        Context context,
+        ILocationDictionary<List<TerminalLocation>> centerToTerminals,
+        ILocationDictionary<List<TerminalLocation>> locationToTerminals,
+        Location center)
+    {
+        if (centerToTerminals.TryGetValue(center, out var terminals))
+        {
+            for (var i = 0; i < terminals.Count; i++)
+            {
+                var terminal = terminals[i];
+                if (locationToTerminals.TryGetValue(terminal.Terminal, out var atLocation))
+                {
+                    atLocation.Remove(terminal);
+                    if (atLocation.Count == 0)
+                    {
+                        locationToTerminals.Remove(terminal.Terminal);
+                    }
+                }
+            }
+
+            centerToTerminals.Remove(center);
+        }
+
+        context.Centers.Remove(center);
+        context.CenterToOriginalDirection.Remove(center);
+        RemovePumpjack(context.Grid, center);
+    }
 
     private static Result<SolutionInfo> GetBestSolution(Context context)
     {
