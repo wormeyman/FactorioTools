@@ -168,29 +168,49 @@ public static class AddHeatPipes
         ILocationSet uncoveredPipes,
         ILocationSet uncoveredCenters)
     {
-        // Seed with the candidate that covers the most targets.
-        var seed = Location.Invalid;
-        var seedGain = -1;
-        for (var i = 0; i < candidates.Count; i++)
-        {
-            var gain = Gain(coveredPipes, coveredCenters, candidates[i], uncoveredPipes, uncoveredCenters);
-            if (gain > seedGain)
-            {
-                seedGain = gain;
-                seed = candidates[i];
-            }
-        }
-
-        AddTile(coveredPipes, coveredCenters, chosen, seed, uncoveredPipes, uncoveredCenters);
-
-        // Candidates we could not reach by bridging; skip them on later passes to avoid looping.
-        var unreachable = context.GetLocationSet();
+        var grid = context.Grid;
 
 #if USE_STACKALLOC && LOCATION_AS_STRUCT
         Span<Location> adjacent = stackalloc Location[4];
 #else
         Span<Location> adjacent = new Location[4];
 #endif
+
+        // Seed with the candidate that covers the most targets, but prefer one the network can actually grow from: a
+        // candidate with at least one empty orthogonal neighbor ("expandable"). The highest-coverage tile can be fully
+        // enclosed by pumpjacks and pipes (e.g. a tile wedged between two pumpjacks and two pipe runs). Bridging always
+        // walks outward from the chosen network through empty tiles, so an enclosed seed can never expand and the rest
+        // of the field is abandoned. Falling back to the plain best only when nothing is expandable.
+        var seed = Location.Invalid;
+        var seedGain = -1;
+        var expandableSeed = Location.Invalid;
+        var expandableSeedGain = -1;
+        for (var i = 0; i < candidates.Count; i++)
+        {
+            var candidate = candidates[i];
+            var gain = Gain(coveredPipes, coveredCenters, candidate, uncoveredPipes, uncoveredCenters);
+            if (gain > seedGain)
+            {
+                seedGain = gain;
+                seed = candidate;
+            }
+
+            if (gain > expandableSeedGain && HasEmptyNeighbor(grid, candidate, adjacent))
+            {
+                expandableSeedGain = gain;
+                expandableSeed = candidate;
+            }
+        }
+
+        if (expandableSeed.IsValid)
+        {
+            seed = expandableSeed;
+        }
+
+        AddTile(coveredPipes, coveredCenters, chosen, seed, uncoveredPipes, uncoveredCenters);
+
+        // Candidates we could not reach by bridging; skip them on later passes to avoid looping.
+        var unreachable = context.GetLocationSet();
 
         while (uncoveredPipes.Count > 0 || uncoveredCenters.Count > 0)
         {
@@ -265,6 +285,20 @@ public static class AddHeatPipes
     {
         return CountCovered(coveredPipes, candidate, uncoveredPipes)
             + CountCovered(coveredCenters, candidate, uncoveredCenters);
+    }
+
+    private static bool HasEmptyNeighbor(SquareGrid grid, Location location, Span<Location> adjacent)
+    {
+        grid.GetAdjacent(adjacent, location);
+        for (var i = 0; i < adjacent.Length; i++)
+        {
+            if (adjacent[i].IsValid && grid.IsEmpty(adjacent[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool IsAdjacentToNetwork(SquareGrid grid, ILocationSet chosen, Location candidate, Span<Location> adjacent)

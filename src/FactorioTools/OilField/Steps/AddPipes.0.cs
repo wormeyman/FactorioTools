@@ -181,10 +181,10 @@ public static class AddPipes
         }
 
         var solutionGroups = result.Data!;
-        // When heat pipes and beacons are both enabled, heat is the hard constraint: drop any pipe layout that can't be
-        // fully heated so a heatable layout is selected. If none are heatable the plan list ends up empty and the normal
-        // "at least one pipe strategy" error fires - the same outcome heat-only planning would reach on that field.
-        var requireHeatFeasible = context.Options.AddHeatPipes && context.Options.AddBeacons;
+        // When heat pipes are enabled, heat is the hard constraint: drop any pipe layout that can't be fully heated so a
+        // heatable layout is selected (whether or not beacons are also on). If none are heatable the plan list ends up
+        // empty and the normal "at least one pipe strategy" error fires for that field.
+        var requireHeatFeasible = context.Options.AddHeatPipes;
 
         var plans = new List<PlanInfo>();
         foreach ((var solutionGroup, var groupNumber) in solutionGroups)
@@ -415,13 +415,15 @@ public static class AddPipes
             undergroundPipes = PlanUndergroundPipes.Execute(context, optimizedPipes);
         }
 
-        // On Aquilo (heat pipes enabled) route the heat network first so it claims the contested tiles next to pipes
-        // and pumpjacks; beacon planning then routes around it. Heat coverage is the hard constraint - beacons are
-        // best-effort and may be reduced when heat needs the space. A pipe layout that cannot be fully heated is marked
-        // heat-infeasible so plan selection prefers a heatable layout (see GetAllPlans).
+        // On Aquilo (heat pipes enabled) route the heat network for this layout up front so plan selection can prefer a
+        // layout it can actually fully heat - heat coverage is the hard constraint. Routing per layout matters because
+        // the fewest-pipe layout is not always heatable, while another strategy's layout often is. When beacons are also
+        // on, routing heat first lets it claim the contested tiles next to pipes/pumpjacks and beacons route around it
+        // (best-effort, possibly reduced). A layout that cannot be fully heated is marked heat-infeasible so selection
+        // drops it in favor of a heatable one (see GetAllPlans).
         ILocationSet? heatPipes = null;
         var heatFeasible = true;
-        if (context.Options.AddHeatPipes && context.Options.AddBeacons)
+        if (context.Options.AddHeatPipes)
         {
             heatPipes = AddHeatPipes.Route(context, optimizedPipes, out heatFeasible);
         }
