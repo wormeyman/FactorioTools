@@ -116,18 +116,14 @@
         Plan oil field
       </button>
     </div>
-    <div
-      v-if="submitting && planProgress"
-      class="progress mt-2"
-      style="height: 1.5rem"
-      role="progressbar"
-      :aria-valuenow="progressPercent"
-      aria-valuemin="0"
-      aria-valuemax="100"
-    >
+    <div v-if="submitting && planProgress" class="progress mt-2" style="height: 1.5rem">
       <div
         class="progress-bar progress-bar-striped progress-bar-animated"
+        role="progressbar"
         :style="{ width: progressPercent + '%' }"
+        :aria-valuenow="progressPercent"
+        aria-valuemin="0"
+        aria-valuemax="100"
       >
         {{ planProgress.label }} ({{ progressStep }} of {{ planProgress.total }})
       </div>
