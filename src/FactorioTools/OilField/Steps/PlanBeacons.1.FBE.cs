@@ -64,6 +64,7 @@ public static class PlanBeaconsFbe
     private static BeaconPlannerResult GetBeacons(Context context, List<Area> effectEntityAreas, List<BeaconCandidate> possibleBeacons)
     {
         var beacons = new List<Location>();
+        var effectsGivenCounts = new List<int>();
         var effects = 0;
         var collisionArea = context.GetLocationSet();
         var coveredEntityAreas = context.Options.OverlapBeacons ? null : new CountedBitArray(effectEntityAreas.Count);
@@ -97,11 +98,12 @@ public static class PlanBeaconsFbe
 
             beacons.Add(beacon.Center);
             effects += beacon.EffectsGivenCount;
+            effectsGivenCounts.Add(beacon.EffectsGivenCount);
             // Console.WriteLine($"{beacon.Center} --- {beacon.EffectsGivenCount}");
             collisionArea.UnionWith(beacon.CollisionArea);
         }
 
-        return new BeaconPlannerResult(beacons, effects);
+        return new BeaconPlannerResult(beacons, effects, effectsGivenCounts);
     }
 
     private static List<BeaconCandidate> SortPossibleBeacons(Context context, List<BeaconCandidate> possibleBeacons)

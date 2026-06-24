@@ -39,6 +39,7 @@ public static class PlanBeaconsSnug
         }
 
         var beacons = new List<Location>();
+        var effectsGivenCounts = new List<int>();
         var effects = 0;
 
         while (candidateToInfo.Count > 0)
@@ -95,6 +96,7 @@ public static class PlanBeaconsSnug
 
                 beacons.Add(candidate);
                 effects += info.CoveredCount;
+                effectsGivenCounts.Add(info.CoveredCount);
                 // Console.WriteLine($"{candidate} --- {info.CoveredCount}");
 
                 AddNeighborsAndSort(
@@ -123,7 +125,7 @@ public static class PlanBeaconsSnug
 
         // Visualizer.Show(context.Grid, Array.Empty<DelaunatorSharp.IPoint>(), Array.Empty<DelaunatorSharp.IEdge>());
 
-        return new BeaconPlannerResult(beacons, effects);
+        return new BeaconPlannerResult(beacons, effects, effectsGivenCounts);
     }
 
     private class CandidateFactory : ICandidateFactory<BeaconCandidateInfo>
