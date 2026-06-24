@@ -15,26 +15,28 @@ S CC-FLUTE -> snug (effects: 24, beacons: 22, pipes: 5)
 S CC-FLUTE -> optimize -> FBE* (effects: 24, beacons: 22, pipes: 5)
 S CC-FLUTE -> optimize -> snug (effects: 24, beacons: 22, pipes: 5)
 
-b b b b b b . b b b b b b . . . . . . . 
-b B b b B b . b B b b B b . . . . . . . 
-b b b b b b . b b b b b b . . . . . . . 
-b b b . . . . . . . b b b . . . . . . . 
-b B b . . . . . . . b B b . . . . . . . 
-b b b . E j j j < E b b b > o h . . . . 
-. . . . . j J j h h h h h h ^ h . . . . 
-b b b . . j j j . . b b b h h h . E . . 
-b B b . . . . . . . b B b h . . . . . . 
-b b b . . . . . . . b b b h . . . . . . 
-b b b b b b . b b b b b b h b b b b b b 
-b B b b B b . b B b b B b h b B b b B b 
-b b b b b b . b b b b b b h b b b b b b 
-. . E . . . E b b b . . . h . . . b b b 
-. . . . . . . b B b . E . h v . . b B b 
-. . . . . . . b b b . . j j j . . b b b 
-. . . . . . . . . . . . j J j . . . . . 
-. . . . . . . b b b . . j j j E . b b b 
-. . . . . . . b B b . . . . . . . b B b 
-. . . . . . . b b b . . . . . . . b b b 
-. . . . E . . b b b b b b . b b b b b b 
-. . . . . . . b B b b B b . b B b b B b 
-. . . . . . . b b b b b b . b b b b b b 
+. h h h h h h h h h h h . . . . . . . . . 
+. b b b b b b h b b b b b b . . . . . . . 
+. b B b b B b h b B b b B b . . . . . . . 
+. b b b b b b h b b b b b b . . . . . . . 
+. b b b h h h h . . . b b b . . . . . . . 
+E b B b . h . . . E . b B b . . . . . . . 
+. b b b . h j j j < . b b b > o h . . . . 
+h h h h h h j J j h h h h h h ^ h . . . . 
+h b b b h h j j j h . b b b h h h . . . . 
+h b B b . h h h h h . b B b h . . . . . . 
+h b b b . . . h . . E b b b h h h h h . . 
+h b b b b b b h b b b b b b h b b b b b b 
+. b B b b B b . b B b b B b h b B b b B b 
+. b b b b b b . b b b b b b h b b b b b b 
+. . . . . . . . b b b . . . h . . . b b b 
+. . . . . . E . b B b h h h h v E . b B b 
+. . . . . . . . b b b . h j j j . . b b b 
+. . . . . . . h h h h h h j J j . h h . . 
+. . . . . . . h b b b h h j j j E h b b b 
+. . . . . . . h b B b . h h h h h h b B b 
+. . . . . . . h b b b . . . h . . . b b b 
+. . . . . . . h b b b b b b h b b b b b b 
+. . . . . . . . b B b b B b h b B b b B b 
+. . . . . . . . b b b b b b h b b b b b b 
+. . . . . . E . . . . . . . h h h h h . . 
