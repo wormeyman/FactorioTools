@@ -209,6 +209,28 @@ public static class AddHeatPipes
 
         AddTile(coveredPipes, coveredCenters, chosen, seed, uncoveredPipes, uncoveredCenters);
 
+        GrowFrom(context, chosen, candidates, coveredPipes, coveredCenters, uncoveredPipes, uncoveredCenters);
+    }
+
+    /// <summary>
+    /// Grows an already-seeded connected network (<paramref name="chosen"/> must be non-empty) until every reachable
+    /// uncovered target is covered, bridging through empty tiles when no adjacent candidate makes progress.
+    /// </summary>
+    private static void GrowFrom(
+        Context context,
+        ILocationSet chosen,
+        List<Location> candidates,
+        ILocationDictionary<List<Location>> coveredPipes,
+        ILocationDictionary<List<Location>> coveredCenters,
+        ILocationSet uncoveredPipes,
+        ILocationSet uncoveredCenters)
+    {
+#if USE_STACKALLOC && LOCATION_AS_STRUCT
+        Span<Location> adjacent = stackalloc Location[4];
+#else
+        Span<Location> adjacent = new Location[4];
+#endif
+
         // Candidates we could not reach by bridging; skip them on later passes to avoid looping.
         var unreachable = context.GetLocationSet();
 
