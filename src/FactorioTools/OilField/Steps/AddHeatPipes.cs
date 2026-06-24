@@ -47,7 +47,7 @@ public static class AddHeatPipes
             }
         }
 
-        var chosen = RouteCore(context, pipeTiles, out _);
+        var chosen = RouteCore(context, pipeTiles, out _, out _);
 
         // Place the heat pipe entities.
         foreach (var location in chosen.EnumerateItems())
@@ -62,20 +62,19 @@ public static class AddHeatPipes
     /// Routes the heat pipe network for a given set of pipe tiles and returns the chosen heat tiles without placing any
     /// entities. The caller must have the pipe tiles occupying the grid (so they are not considered empty) - this lets
     /// beacon planning route heat first and place beacons around it. The grid is left unchanged.
-    /// <paramref name="coversAllTargets"/> is false when this pipe layout cannot be fully heated (some pipe or pumpjack
-    /// has no reachable empty tile), so the caller can prefer a heatable layout - heat is the hard constraint.
+    /// <paramref name="uncoveredPipes"/> and <paramref name="uncoveredCenters"/> are non-empty when this pipe layout
+    /// cannot be fully heated (some pipe or pumpjack has no reachable empty tile); the caller ranks by these counts.
     /// </summary>
-    public static ILocationSet Route(Context context, ILocationSet pipeTiles, out bool coversAllTargets)
+    public static ILocationSet Route(Context context, ILocationSet pipeTiles, out ILocationSet uncoveredPipes, out ILocationSet uncoveredCenters)
     {
         var grid = context.Grid;
 
-        // Occupy the pipe tiles so heat tiles are not chosen on top of them, then route and restore the grid.
         foreach (var pipe in pipeTiles.EnumerateItems())
         {
             grid.AddEntity(pipe, new TemporaryEntity(grid.GetId()));
         }
 
-        var chosen = RouteCore(context, pipeTiles, out coversAllTargets);
+        var chosen = RouteCore(context, pipeTiles, out uncoveredPipes, out uncoveredCenters);
 
         foreach (var pipe in pipeTiles.EnumerateItems())
         {
@@ -89,7 +88,7 @@ public static class AddHeatPipes
     /// The core greedy routing: builds candidate heat tiles from the targets and grows one connected network covering
     /// them. Assumes the pipe tiles (and pumpjacks) already occupy the grid so candidate tiles are genuinely empty.
     /// </summary>
-    private static ILocationSet RouteCore(Context context, ILocationSet pipeTiles, out bool coversAllTargets)
+    private static ILocationSet RouteCore(Context context, ILocationSet pipeTiles, out ILocationSet uncoveredPipesOut, out ILocationSet uncoveredCentersOut)
     {
         var grid = context.Grid;
 
@@ -149,7 +148,8 @@ public static class AddHeatPipes
             Grow(context, chosen, candidates, coveredPipes, coveredCenters, uncoveredPipes, uncoveredCenters);
         }
 
-        coversAllTargets = uncoveredPipes.Count == 0 && uncoveredCenters.Count == 0;
+        uncoveredPipesOut = uncoveredPipes;
+        uncoveredCentersOut = uncoveredCenters;
 
         return chosen;
     }

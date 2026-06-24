@@ -16,6 +16,27 @@
         Consider removing improperly overlapping pumpjacks before placing the new blueprint.
       </div>
     </div>
+    <div
+      v-if="plan.data.summary.heatDroppedPumpjacks > 0"
+      class="row g-2"
+      role="alert"
+    >
+      <div class="col-12 alert alert-warning" role="alert">
+        <b>Some pumpjacks couldn't be heated.</b>
+        {{ plan.data.summary.heatDroppedPumpjacks }} pumpjack(s) were dropped so the rest of the field
+        stays fully heated and connected on Aquilo.
+      </div>
+    </div>
+    <div
+      v-if="plan.data.summary.unheatedPumpjacks + plan.data.summary.unheatedPipes > 0"
+      class="row g-2"
+      role="alert"
+    >
+      <div class="col-12 alert alert-warning" role="alert">
+        <b>Incomplete heat coverage.</b> Some placed pumpjacks or pipes have no adjacent heat pipe and will
+        freeze on Aquilo - the field is too tightly packed to fully heat even after dropping pumpjacks.
+      </div>
+    </div>
     <template v-if="allPlans.length > 0">
       <table class="table">
         <thead>

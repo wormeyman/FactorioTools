@@ -4,6 +4,9 @@ namespace Knapcode.FactorioTools.OilField;
 
 public class PlannerTest : BasePlannerTest
 {
+    // A small-list blueprint with no fully-heatable pipe layout (every candidate layout leaves a boxed-in tile).
+    private const int BoxedInHeatIndex = 55;
+
     public static IReadOnlyList<string> BlueprintsWithIsolatedAreas = new[]
     {
         "0eJyU1ctugzAQheF3mbUXeGwg8CpVVRFiVW6Dg7hURYh3L2BX6sUSh2WI82Xi8OOZrvfRtJ11A5Uz2frheiqfZurtq6vu2zVXNYZKasemfavqdxI0TO12xQ6moUWQdTfzSaVcngUZN9jBGm/sL6YXNzZX060LRMRqH/36gYfbvmlFWAua1qVqdW+2M7V/L1nEP44BTjHMKYTLYU4jXOK57DfHES49MR3AZQAnA5cf/9gc4HTmucsxd0FulDBdccwVyN4pmJMJsnne4wTwTnTBEvCgMBLcO1EGM+AhaXCYDyhNIm2E24U14CFxfO+fPm5NInUojc+H5KHj80U9pA+Nz8dIHxz6AB4ujPShiqgX+z8Y6YPT3VNAHwz1wbgHHR3+aarSv956Bu/ncvnjYBf0Ybo+LFi+AAAA//8DAEf3mj4=",
@@ -183,39 +186,29 @@ public class PlannerTest : BasePlannerTest
 
     [Theory]
     [MemberData(nameof(SmallListBlueprintIndexes))]
-    public void EnablingBeaconsNeverBreaksAchievableHeatCoverage(int index)
+    public void EnablingBeaconsNeverForcesMoreHeatDrops(int index)
     {
-        // Heat pipes are the hard constraint; beacons are best-effort. The coexistence guarantee is: turning beacons ON
-        // must never break a field that heat-only could fully heat. (Whether a field is heatable at all is a separate,
-        // pre-existing property of the heat router - many dense fields cannot be fully heated even with beacons off, so
-        // those are out of scope here.) When both are on, the planner routes heat first and only selects pipe layouts it
-        // can fully heat, so any field heatable beacons-off stays fully heated with beacons on.
+        // Heat pipes are the hard constraint; beacons are best-effort. Turning beacons on must never force the
+        // planner to drop more pumpjacks than heat-only would to keep the field fully heated.
         var blueprintString = SmallListBlueprintStrings[index];
 
         var heatOnly = OilFieldOptions.ForMediumElectricPole;
         heatOnly.ValidateSolution = true;
         heatOnly.AddHeatPipes = true;
         heatOnly.AddBeacons = false;
-        try
-        {
-            Planner.Execute(heatOnly, ParseBlueprint.Execute(blueprintString));
-        }
-        catch (FactorioToolsException)
-        {
-            // This field cannot be fully heated even without beacons - a pre-existing heat-router limitation, not a
-            // coexistence regression. Skip it.
-            return;
-        }
+        var heatOnlyResult = Planner.Execute(heatOnly, ParseBlueprint.Execute(blueprintString));
 
         var bothOn = OilFieldOptions.ForMediumElectricPole;
         bothOn.ValidateSolution = true;
         bothOn.AddHeatPipes = true;
         bothOn.AddBeacons = true;
+        var bothOnResult = Planner.Execute(bothOn, ParseBlueprint.Execute(blueprintString));
 
-        var result = Planner.Execute(bothOn, ParseBlueprint.Execute(blueprintString));
-
-        Assert.NotNull(result.Context.HeatPipes);
-        Assert.NotEmpty(result.Context.Grid.GetEntities().OfType<HeatPipe>());
+        Assert.True(
+            bothOnResult.Summary.HeatDroppedPumpjacks <= heatOnlyResult.Summary.HeatDroppedPumpjacks,
+            $"beacons on dropped {bothOnResult.Summary.HeatDroppedPumpjacks} pumpjacks vs heat-only {heatOnlyResult.Summary.HeatDroppedPumpjacks}");
+        Assert.Equal(0, bothOnResult.Summary.UnheatedPumpjacks);
+        Assert.Equal(0, bothOnResult.Summary.UnheatedPipes);
     }
 
     [Fact]
@@ -357,36 +350,79 @@ public class PlannerTest : BasePlannerTest
         // Must not throw - HeatPipesCoverAllTargets is validated inside Execute.
         var result = Planner.Execute(options, ParseBlueprint.Execute(SmallListBlueprintStrings[6]));
 
+        Assert.Equal(0, result.Summary.HeatDroppedPumpjacks);
         Assert.NotNull(result.Context.HeatPipes);
         Assert.True(result.Context.HeatPipes!.Count > 1, "the heat network should be more than the seed tile");
     }
 
     [Fact]
-    public void HeatOnlyPrefersHeatableLayoutAcrossSmallList()
+    public async Task DropsPumpjacksToFullyHeatBoxedInField()
     {
-        // Heat pipes are the hard constraint. When heat is enabled the planner generates many candidate pipe layouts
-        // (multiple strategies, optimized and not); it must route heat per layout and prefer one it can fully heat,
-        // rather than picking the fewest-pipe layout and discovering too late that it freezes. This raises how many of
-        // the 61 small-list blueprints can be fully heated beacons-off. (Some dense fields have no heatable layout at
-        // all - a separate, deferred pipe-routing limitation - so this is a threshold, not all 61.)
-        var heated = 0;
+        // A boxed-in field has no fully-heatable layout for the full pumpjack set. The planner must drop the
+        // fewest pumpjacks needed so the rest is fully heated and connected, and report the drop count.
+        var options = OilFieldOptions.ForMediumElectricPole;
+        options.ValidateSolution = true; // connectivity is validated; coverage is now reported, not thrown
+        options.AddHeatPipes = true;
+        options.AddBeacons = false;
+
+        var result = Planner.Execute(options, ParseBlueprint.Execute(SmallListBlueprintStrings[BoxedInHeatIndex]));
+        var summary = result.Summary;
+
+        Assert.True(summary.HeatDroppedPumpjacks > 0, "expected at least one pumpjack to be dropped on a boxed-in field");
+        Assert.Equal(0, summary.UnheatedPumpjacks);
+        Assert.Equal(0, summary.UnheatedPipes);
+        Assert.NotEmpty(result.Context.Grid.GetEntities().OfType<HeatPipe>());
+#if USE_VERIFY
+        await Verify(GetGridString(result));
+#else
+        await Task.Yield();
+#endif
+    }
+
+    [Fact]
+    public void HeatOnlyFullyHeatsEveryFieldAndRarelyDrops()
+    {
+        // With per-layout heat ranking plus minimal-drop, every small-list field comes out fully heated. Most need
+        // zero drops (the layout itself is heatable); only the dense boxed-in fields drop any pumpjacks.
+        var zeroDrop = 0;
         for (var index = 0; index < SmallListBlueprintStrings.Count; index++)
         {
             var options = OilFieldOptions.ForMediumElectricPole;
             options.ValidateSolution = true;
             options.AddHeatPipes = true;
             options.AddBeacons = false;
-            try
+
+            var summary = Planner.Execute(options, ParseBlueprint.Execute(SmallListBlueprintStrings[index])).Summary;
+
+            Assert.Equal(0, summary.UnheatedPumpjacks);
+            Assert.Equal(0, summary.UnheatedPipes);
+            if (summary.HeatDroppedPumpjacks == 0)
             {
-                Planner.Execute(options, ParseBlueprint.Execute(SmallListBlueprintStrings[index]));
-                heated++;
-            }
-            catch (FactorioToolsException)
-            {
+                zeroDrop++;
             }
         }
 
-        Assert.True(heated >= 35, $"expected heat-only to fully heat at least 35 of {SmallListBlueprintStrings.Count}, got {heated}");
+        Assert.True(zeroDrop >= 35, $"expected at least 35 of {SmallListBlueprintStrings.Count} fields to need zero drops, got {zeroDrop}");
+    }
+
+    [Fact]
+    public void HeatOnBoxedInFieldDropsPumpjacksAndFullyHeats()
+    {
+        // A boxed-in field has no fully-heatable pipe layout for the full pumpjack set. Task 2 added
+        // the minimal-drop loop: the planner drops the fewest pumpjacks until the remaining set is fully
+        // heatable, then reports the drop count. The field must come out fully heated (zero unheated gap)
+        // and the drop count must be positive.
+        var options = OilFieldOptions.ForMediumElectricPole;
+        options.AddHeatPipes = true;
+        options.AddBeacons = false;
+        // ValidateSolution stays false here: we are asserting the production path that does not throw.
+
+        var index = BoxedInHeatIndex;
+        var (_, summary) = Planner.Execute(options, ParseBlueprint.Execute(SmallListBlueprintStrings[index]));
+
+        Assert.True(summary.HeatDroppedPumpjacks > 0, "expected at least one pumpjack to be dropped on a boxed-in field");
+        Assert.Equal(0, summary.UnheatedPumpjacks);
+        Assert.Equal(0, summary.UnheatedPipes);
     }
 
 }

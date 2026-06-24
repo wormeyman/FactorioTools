@@ -285,7 +285,7 @@
           },
           "addHeatPipes": {
             "type": "boolean",
-            "description": "Whether or not to route a heat pipe network adjacent to every pumpjack and pipe. This is required on Aquilo\r\n(Factorio 2.0 / Space Age) where unheated entities freeze. When enabled, the output blueprint is emitted in the\r\nFactorio 2.0 version format (2.0 directions and module item format). The planner only routes the heat pipe network\r\nand leaves it for the user to connect a heat source (heating tower or reactor). Beacons (see Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons)\r\ncompete with heat pipes for the tiles next to pipes, so coverage is best with beacons off.",
+            "description": "Whether or not to route a heat pipe network adjacent to every pumpjack and pipe. This is required on Aquilo\r\n(Factorio 2.0 / Space Age) where unheated entities freeze. When enabled, the output blueprint is emitted in the\r\nFactorio 2.0 version format (2.0 directions and module item format). The planner only routes the heat pipe network\r\nand leaves it for the user to connect a heat source (heating tower or reactor). Heat pipes and beacons\r\n(see Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons) can be enabled together: heat is the hard constraint, so the planner routes the\r\nheat network first and then places beacons around it, choosing a pipe layout it can fully heat. Beacons are\r\nbest-effort and may be reduced (even to none) on tight fields where heat needs the contested tiles.",
             "default": false
           },
           "heatPipeEntityName": {
@@ -475,7 +475,7 @@
           },
           "addHeatPipes": {
             "type": "boolean",
-            "description": "Whether or not to route a heat pipe network adjacent to every pumpjack and pipe. This is required on Aquilo\r\n(Factorio 2.0 / Space Age) where unheated entities freeze. When enabled, the output blueprint is emitted in the\r\nFactorio 2.0 version format (2.0 directions and module item format). The planner only routes the heat pipe network\r\nand leaves it for the user to connect a heat source (heating tower or reactor). Beacons (see Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons)\r\ncompete with heat pipes for the tiles next to pipes, so coverage is best with beacons off."
+            "description": "Whether or not to route a heat pipe network adjacent to every pumpjack and pipe. This is required on Aquilo\r\n(Factorio 2.0 / Space Age) where unheated entities freeze. When enabled, the output blueprint is emitted in the\r\nFactorio 2.0 version format (2.0 directions and module item format). The planner only routes the heat pipe network\r\nand leaves it for the user to connect a heat source (heating tower or reactor). Heat pipes and beacons\r\n(see Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons) can be enabled together: heat is the hard constraint, so the planner routes the\r\nheat network first and then places beacons around it, choosing a pipe layout it can fully heat. Beacons are\r\nbest-effort and may be reduced (even to none) on tight fields where heat needs the contested tiles."
           },
           "heatPipeEntityName": {
             "type": "string",
@@ -616,9 +616,12 @@
       "OilFieldPlanSummary": {
         "required": [
           "alternatePlans",
+          "heatDroppedPumpjacks",
           "missingPumpjacks",
           "rotatedPumpjacks",
           "selectedPlans",
+          "unheatedPipes",
+          "unheatedPumpjacks",
           "unusedPlans"
         ],
         "type": "object",
@@ -631,6 +634,21 @@
           "rotatedPumpjacks": {
             "type": "integer",
             "description": "The number of pumpjacks that were rotated from their original position.",
+            "format": "int32"
+          },
+          "heatDroppedPumpjacks": {
+            "type": "integer",
+            "description": "The number of pumpjacks dropped so the rest of the field can be fully heated on Aquilo.",
+            "format": "int32"
+          },
+          "unheatedPumpjacks": {
+            "type": "integer",
+            "description": "The number of placed pumpjacks with no adjacent heat pipe after heat routing.",
+            "format": "int32"
+          },
+          "unheatedPipes": {
+            "type": "integer",
+            "description": "The number of placed pipes with no adjacent heat pipe after heat routing.",
             "format": "int32"
           },
           "selectedPlans": {

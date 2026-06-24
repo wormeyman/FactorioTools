@@ -22,15 +22,10 @@ public static class AddPipes
         Solution bestSolution;
         BeaconSolution? bestBeacons;
 
-        var result = GetBestSolution(context);
-        if (result.Exception is NoPathBetweenTerminalsException && !eliminateStrandedTerminals)
+        var result = SelectBestSolution(context, eliminateStrandedTerminals);
+        if (result.Exception is not null)
         {
-            EliminateStrandedTerminals(context);
-            result = GetBestSolution(context);
-            if (result.Exception is not null)
-            {
-                throw result.Exception;
-            }
+            throw result.Exception;
         }
 
         (selectedPlans, alternatePlans, unusedPlans, bestSolution, bestBeacons) = result.Data!;
@@ -64,6 +59,142 @@ public static class AddPipes
 
     private record SolutionInfo(List<OilFieldPlan> SelectedPlans, List<OilFieldPlan> AltnernatePlans, List<OilFieldPlan> UnusedPlans, Solution BestSolution, BeaconSolution? BestBeacons);
 
+    private static Result<SolutionInfo> SelectBestSolution(Context context, bool eliminateStrandedTerminals)
+    {
+        // The full pumpjack set's planning maps; the drop loop mutates these in place so each replan
+        // (which clones context.CenterToTerminals at the start of GetSolutionGroups) sees the reduced set.
+        var centerToTerminals = context.CenterToTerminals;
+        var locationToTerminals = context.LocationToTerminals;
+
+        while (true)
+        {
+            context.CenterToTerminals = centerToTerminals;
+            context.LocationToTerminals = locationToTerminals;
+
+            var result = GetBestSolution(context);
+            if (result.Exception is NoPathBetweenTerminalsException && !eliminateStrandedTerminals)
+            {
+                EliminateStrandedTerminals(context);
+                result = GetBestSolution(context);
+            }
+
+            if (result.Exception is not null)
+            {
+                return result;
+            }
+
+            var best = result.Data!.BestSolution;
+            if (!context.Options.AddHeatPipes
+                || best.UncoveredPipes.Count + best.UncoveredCenters.Count == 0)
+            {
+                return result;
+            }
+
+            var dropCenter = ChooseDropCandidate(context, best);
+            if (!dropCenter.IsValid)
+            {
+                // Nothing left to drop (e.g. the last pumpjack is boxed by avoid entities). Accept the residual;
+                // it is reported on the summary and surfaced as a UI warning.
+                return result;
+            }
+
+            DropPumpjack(context, centerToTerminals, locationToTerminals, dropCenter);
+            context.HeatDroppedPumpjacks++;
+        }
+    }
+
+    // Minimal-drop: remove one pumpjack per pass. Prefer a pumpjack that itself cannot be heated; otherwise the
+    // pumpjack nearest a stuck (unheated) pipe tile. Deterministic tie-break on (Y, X) for Lua stability.
+    private static Location ChooseDropCandidate(Context context, Solution best)
+    {
+        if (best.UncoveredCenters.Count > 0)
+        {
+            var chosenCenter = Location.Invalid;
+            foreach (var center in best.UncoveredCenters.EnumerateItems())
+            {
+                if (IsBefore(center, chosenCenter))
+                {
+                    chosenCenter = center;
+                }
+            }
+
+            return chosenCenter;
+        }
+
+        if (best.UncoveredPipes.Count == 0)
+        {
+            return Location.Invalid;
+        }
+
+        var chosen = Location.Invalid;
+        var chosenDistance = int.MaxValue;
+        for (var i = 0; i < context.Centers.Count; i++)
+        {
+            var center = context.Centers[i];
+            var distance = int.MaxValue;
+            foreach (var pipe in best.UncoveredPipes.EnumerateItems())
+            {
+                var d = Math.Abs(center.X - pipe.X) + Math.Abs(center.Y - pipe.Y);
+                if (d < distance)
+                {
+                    distance = d;
+                }
+            }
+
+            if (distance < chosenDistance || (distance == chosenDistance && IsBefore(center, chosen)))
+            {
+                chosenDistance = distance;
+                chosen = center;
+            }
+        }
+
+        return chosen;
+    }
+
+    private static bool IsBefore(Location a, Location b)
+    {
+        if (!b.IsValid)
+        {
+            return true;
+        }
+
+        if (a.Y != b.Y)
+        {
+            return a.Y < b.Y;
+        }
+
+        return a.X < b.X;
+    }
+
+    private static void DropPumpjack(
+        Context context,
+        ILocationDictionary<List<TerminalLocation>> centerToTerminals,
+        ILocationDictionary<List<TerminalLocation>> locationToTerminals,
+        Location center)
+    {
+        if (centerToTerminals.TryGetValue(center, out var terminals))
+        {
+            for (var i = 0; i < terminals.Count; i++)
+            {
+                var terminal = terminals[i];
+                if (locationToTerminals.TryGetValue(terminal.Terminal, out var atLocation))
+                {
+                    atLocation.Remove(terminal);
+                    if (atLocation.Count == 0)
+                    {
+                        locationToTerminals.Remove(terminal.Terminal);
+                    }
+                }
+            }
+
+            centerToTerminals.Remove(center);
+        }
+
+        context.Centers.Remove(center);
+        context.CenterToOriginalDirection.Remove(center);
+        RemovePumpjack(context.Grid, center);
+    }
+
     private static Result<SolutionInfo> GetBestSolution(Context context)
     {
         var result = GetAllPlans(context);
@@ -75,6 +206,18 @@ public static class AddPipes
         var sortedPlans = result.Data!;
         sortedPlans.Sort((a, b) =>
         {
+            // When heat is on it is the hard constraint: fewer unheated targets = better, ahead of everything else.
+            if (context.Options.AddHeatPipes)
+            {
+                var aUnheated = a.Pipes.UncoveredPipes.Count + a.Pipes.UncoveredCenters.Count;
+                var bUnheated = b.Pipes.UncoveredPipes.Count + b.Pipes.UncoveredCenters.Count;
+                var heat = aUnheated.CompareTo(bUnheated);
+                if (heat != 0)
+                {
+                    return heat;
+                }
+            }
+
             // more effects = better
             var c = b.Plan.BeaconEffectCount.CompareTo(a.Plan.BeaconEffectCount);
             if (c != 0)
@@ -181,21 +324,12 @@ public static class AddPipes
         }
 
         var solutionGroups = result.Data!;
-        // When heat pipes are enabled, heat is the hard constraint: drop any pipe layout that can't be fully heated so a
-        // heatable layout is selected (whether or not beacons are also on). If none are heatable the plan list ends up
-        // empty and the normal "at least one pipe strategy" error fires for that field.
-        var requireHeatFeasible = context.Options.AddHeatPipes;
 
         var plans = new List<PlanInfo>();
         foreach ((var solutionGroup, var groupNumber) in solutionGroups)
         {
             foreach (var solution in solutionGroup)
             {
-                if (requireHeatFeasible && !solution.HeatFeasible)
-                {
-                    continue;
-                }
-
                 if (solution.BeaconSolutions is null)
                 {
                     foreach (var strategy in solution.Strategies)
@@ -415,17 +549,19 @@ public static class AddPipes
             undergroundPipes = PlanUndergroundPipes.Execute(context, optimizedPipes);
         }
 
-        // On Aquilo (heat pipes enabled) route the heat network for this layout up front so plan selection can prefer a
-        // layout it can actually fully heat - heat coverage is the hard constraint. Routing per layout matters because
-        // the fewest-pipe layout is not always heatable, while another strategy's layout often is. When beacons are also
-        // on, routing heat first lets it claim the contested tiles next to pipes/pumpjacks and beacons route around it
-        // (best-effort, possibly reduced). A layout that cannot be fully heated is marked heat-infeasible so selection
-        // drops it in favor of a heatable one (see GetAllPlans).
+        // On Aquilo (heat pipes enabled) route the heat network for this layout up front so plan selection can rank by
+        // heat coverage - heat is the hard constraint. Routing per layout matters because the fewest-pipe layout is not
+        // always heatable, while another strategy's layout often is. When beacons are also on, routing heat first lets
+        // it claim the contested tiles next to pipes/pumpjacks and beacons route around it (best-effort, possibly
+        // reduced). Layouts that cannot be fully heated are still kept but ranked last so a heatable one is preferred.
         ILocationSet? heatPipes = null;
+        ILocationSet uncoveredPipes = EmptyLocationSet.Instance;
+        ILocationSet uncoveredCenters = EmptyLocationSet.Instance;
         var heatFeasible = true;
         if (context.Options.AddHeatPipes)
         {
-            heatPipes = AddHeatPipes.Route(context, optimizedPipes, out heatFeasible);
+            heatPipes = AddHeatPipes.Route(context, optimizedPipes, out uncoveredPipes, out uncoveredCenters);
+            heatFeasible = uncoveredPipes.Count == 0 && uncoveredCenters.Count == 0;
         }
 
         List<BeaconSolution>? beaconSolutions = null;
@@ -451,6 +587,8 @@ public static class AddPipes
             BeaconSolutions = beaconSolutions,
             HeatPipes = heatPipes,
             HeatFeasible = heatFeasible,
+            UncoveredPipes = uncoveredPipes,
+            UncoveredCenters = uncoveredCenters,
         };
     }
 
@@ -539,6 +677,8 @@ public static class AddPipes
         public required List<BeaconSolution>? BeaconSolutions { get; set; }
         public required ILocationSet? HeatPipes { get; set; }
         public required bool HeatFeasible { get; set; }
+        public required ILocationSet UncoveredPipes { get; set; }
+        public required ILocationSet UncoveredCenters { get; set; }
     }
 
     private class LocationSetComparer : IEqualityComparer<ILocationSet>

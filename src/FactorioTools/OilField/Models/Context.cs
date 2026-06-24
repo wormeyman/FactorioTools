@@ -23,6 +23,12 @@ public class Context
     /// </summary>
     public ILocationSet? HeatPipes { get; set; }
 
+    /// <summary>
+    /// The number of pumpjacks dropped (removed from the field) to make the remaining set fully heatable on Aquilo.
+    /// Zero unless <see cref="OilFieldOptions.AddHeatPipes"/> is set and the full set had no fully-heatable layout.
+    /// </summary>
+    public int HeatDroppedPumpjacks { get; set; }
+
     public required SharedInstances SharedInstances { get; set; }
 
     public ILocationDictionary<T> GetLocationDictionary<T>()

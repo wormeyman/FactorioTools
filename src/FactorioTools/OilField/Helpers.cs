@@ -40,6 +40,17 @@ public static class Helpers
         return centerEntity;
     }
 
+    public static void RemovePumpjack(SquareGrid grid, Location center)
+    {
+        for (var x = -1; x <= 1; x++)
+        {
+            for (var y = -1; y <= 1; y++)
+            {
+                grid.RemoveEntity(new Location(center.X + x, center.Y + y));
+            }
+        }
+    }
+
     public static ILocationDictionary<List<TerminalLocation>> GetCenterToTerminals(Context context, SquareGrid grid, IReadOnlyCollection<Location> centers)
     {
         var centerToTerminals = context.GetLocationDictionary<List<TerminalLocation>>();
