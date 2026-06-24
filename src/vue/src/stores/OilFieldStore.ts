@@ -1,7 +1,6 @@
 import { defineStore, Store } from "pinia"
 import { StorageLike } from "pinia-plugin-persistedstate"
 import { LocationQuery } from "vue-router"
-import { ref, watch } from "vue"
 import { getEntries } from "../lib/helpers"
 
 const defaults = {
@@ -108,57 +107,6 @@ class ToggleStorage implements StorageLike {
 
 const toggleStorage = new ToggleStorage()
 
-// TEMPORARY guard: beacons and heat pipes can't be enabled at the same time. The
-// core planner doesn't support both yet - they compete for the tiles next to pipes,
-// so the heat pipes get dropped and machines would freeze (see OilFieldOptions.cs
-// AddHeatPipes / the PlanBeacons.* steps). Heat pipes win - keeping the field warm
-// matters more than the beacon bonus. Remove this once the planner can coexist.
-// This warning is intentionally NOT part of the persisted/query-string store state.
-export const beaconHeatPipeConflictWarning = ref(false)
-
-let mutualExclusionInstalled = false
-function installBeaconHeatPipeMutualExclusion(store: OilFieldStore) {
-  if (mutualExclusionInstalled) {
-    return
-  }
-  mutualExclusionInstalled = true
-
-  // Handle a returning user who already has both enabled in localStorage: heat
-  // pipes win, silently (no warning - they didn't just try to break the rule).
-  if (store.addHeatPipes && store.addBeacons) {
-    store.addBeacons = false
-  }
-
-  // Enabling heat pipes turns off beacons silently.
-  watch(
-    () => store.addHeatPipes,
-    (addHeatPipes) => {
-      if (addHeatPipes && store.addBeacons) {
-        store.addBeacons = false
-      }
-      if (!addHeatPipes) {
-        beaconHeatPipeConflictWarning.value = false
-      }
-    },
-  )
-
-  // Trying to enable beacons while heat pipes is on is rejected: revert and warn.
-  // flush: "post" runs the revert after the checkbox has rendered as checked, so
-  // the false-after-true transition is a real diff that patches the DOM checkbox
-  // back to unchecked (a "pre"/"sync" revert is invisible to the render and leaves
-  // the box stuck visually checked even though the store value is correctly false).
-  watch(
-    () => store.addBeacons,
-    (addBeacons) => {
-      if (addBeacons && store.addHeatPipes) {
-        store.addBeacons = false
-        beaconHeatPipeConflictWarning.value = true
-      }
-    },
-    { flush: "post" },
-  )
-}
-
 function getStore(): OilFieldStore {
   const store = defineStore("OilFieldStore", {
     state: () => Object.assign({}, defaults),
@@ -166,7 +114,6 @@ function getStore(): OilFieldStore {
       storage: toggleStorage,
     },
   })()
-  installBeaconHeatPipeMutualExclusion(store)
   return store
 }
 

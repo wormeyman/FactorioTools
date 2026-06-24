@@ -116,8 +116,10 @@ export interface OilFieldPlanRequest {
    * Whether or not to route a heat pipe network adjacent to every pumpjack and pipe. This is required on Aquilo
    * (Factorio 2.0 / Space Age) where unheated entities freeze. When enabled, the output blueprint is emitted in the
    * Factorio 2.0 version format (2.0 directions and module item format). The planner only routes the heat pipe network
-   * and leaves it for the user to connect a heat source (heating tower or reactor). Beacons (see Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons)
-   * compete with heat pipes for the tiles next to pipes, so coverage is best with beacons off.
+   * and leaves it for the user to connect a heat source (heating tower or reactor). Heat pipes and beacons
+   * (see Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons) can be enabled together: heat is the hard constraint, so the planner routes the
+   * heat network first and then places beacons around it, choosing a pipe layout it can fully heat. Beacons are
+   * best-effort and may be reduced (even to none) on tight fields where heat needs the contested tiles.
    * @default false
    */
   addHeatPipes?: boolean;
@@ -260,8 +262,10 @@ export interface OilFieldPlanRequestResponse {
    * Whether or not to route a heat pipe network adjacent to every pumpjack and pipe. This is required on Aquilo
    * (Factorio 2.0 / Space Age) where unheated entities freeze. When enabled, the output blueprint is emitted in the
    * Factorio 2.0 version format (2.0 directions and module item format). The planner only routes the heat pipe network
-   * and leaves it for the user to connect a heat source (heating tower or reactor). Beacons (see Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons)
-   * compete with heat pipes for the tiles next to pipes, so coverage is best with beacons off.
+   * and leaves it for the user to connect a heat source (heating tower or reactor). Heat pipes and beacons
+   * (see Knapcode.FactorioTools.OilField.OilFieldOptions.AddBeacons) can be enabled together: heat is the hard constraint, so the planner routes the
+   * heat network first and then places beacons around it, choosing a pipe layout it can fully heat. Beacons are
+   * best-effort and may be reduced (even to none) on tight fields where heat needs the contested tiles.
    */
   addHeatPipes: boolean;
   /** The internal entity name for the heat pipe to use. */
@@ -373,6 +377,21 @@ export interface OilFieldPlanSummary {
    * @format int32
    */
   rotatedPumpjacks: number;
+  /**
+   * The number of pumpjacks dropped so the rest of the field can be fully heated on Aquilo.
+   * @format int32
+   */
+  heatDroppedPumpjacks: number;
+  /**
+   * The number of placed pumpjacks with no adjacent heat pipe after heat routing.
+   * @format int32
+   */
+  unheatedPumpjacks: number;
+  /**
+   * The number of placed pipes with no adjacent heat pipe after heat routing.
+   * @format int32
+   */
+  unheatedPipes: number;
   /** The set of plans which exactly the same and determined to be the best. */
   selectedPlans: OilFieldPlan[];
   /** The set of plans which are equivalent to the selected plans by ranking but not exactly the same. */
