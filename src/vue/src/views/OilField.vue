@@ -116,16 +116,21 @@
         Plan oil field
       </button>
     </div>
-    <div v-if="submitting && planProgress" class="progress mt-2" style="height: 1.5rem">
-      <div
-        class="progress-bar progress-bar-striped progress-bar-animated"
-        role="progressbar"
-        :style="{ width: progressPercent + '%' }"
-        :aria-valuenow="progressPercent"
-        aria-valuemin="0"
-        aria-valuemax="100"
-      >
-        {{ planProgress.label }} ({{ progressStep }} of {{ planProgress.total }})
+    <div v-if="submitting && planProgress" class="alert alert-info mt-2 mb-0" role="status">
+      <div class="mb-2">
+        Pipe strategies: {{ planProgress.label }} ({{ progressStep }} of {{ planProgress.total }})
+      </div>
+      <div class="progress" style="height: 1.5rem">
+        <div
+          class="progress-bar progress-bar-striped progress-bar-animated"
+          role="progressbar"
+          :style="{ width: progressPercent + '%' }"
+          :aria-valuenow="progressPercent"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          {{ progressPercent }}%
+        </div>
       </div>
     </div>
     <OilFieldPlanView v-if="plan" :plan="plan" />
@@ -281,7 +286,23 @@ export default {
       return `https://fbeworkeyman.wormeyman.workers.dev/?source=${this.inputBlueprint}`
     },
   },
+  watch: {
+    addBeacons() {
+      this.autoEnableProgressForHeatBeacons()
+    },
+    addHeatPipes() {
+      this.autoEnableProgressForHeatBeacons()
+    },
+  },
   methods: {
+    autoEnableProgressForHeatBeacons() {
+      // Heating beacons is the slowest plan (see the heat+beacons notice), so
+      // default the progress bar on when both are selected - the user sees
+      // movement instead of a frozen spinner. They can still turn it back off.
+      if (this.addBeacons && this.addHeatPipes) {
+        this.showProgress = true
+      }
+    },
     toggleAdvancedOptions() {
       this.useAdvancedOptions = !this.useAdvancedOptions
     },
