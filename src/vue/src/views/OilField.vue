@@ -98,8 +98,7 @@
     </div>
     <PlannerForm :show-advanced-options="useAdvancedOptions" v-show="useAdvancedOptions" />
     <div v-if="addHeatPipes && addBeacons" class="alert alert-info mt-3" role="alert">
-      Heating beacons runs entirely in your browser. Large oil fields can take a while to plan -
-      you can cancel a run in progress.
+      Heating beacons runs entirely in your browser. Large oil fields can take a while to plan.
     </div>
     <div class="d-grid gap-2">
       <button
@@ -115,14 +114,6 @@
           aria-hidden="true"
         ></span>
         Plan oil field
-      </button>
-      <button
-        v-if="submitting"
-        type="button"
-        class="btn btn-outline-secondary"
-        @click.prevent="cancel"
-      >
-        Cancel
       </button>
     </div>
     <OilFieldPlanView v-if="plan" :plan="plan" />
@@ -184,7 +175,6 @@
 
 <script lang="ts">
 import { ApiError, ApiResult, getPlan, normalize } from "../lib/OilFieldPlanner"
-import { cancel as cancelPlanning, PlanCancelledError } from "../lib/wasmPlanner"
 import BeaconForm from "../components/BeaconForm.vue"
 import ElectricPoleSelect from "../components/ElectricPoleForm.vue"
 import HeatPipeForm from "../components/HeatPipeForm.vue"
@@ -375,9 +365,6 @@ export default {
         return dataOrError
       })
     },
-    cancel() {
-      cancelPlanning()
-    },
     async submit() {
       await this.invokeApi(async () => {
         this.normalizeError = null
@@ -402,11 +389,6 @@ export default {
       await new Promise((r) => setTimeout(r, 10))
       try {
         await api()
-      } catch (e) {
-        if (!(e instanceof PlanCancelledError)) {
-          throw e
-        }
-        // Cancelled by the user - leave the previous plan/errors untouched.
       } finally {
         this.submitting = false
       }
