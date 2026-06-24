@@ -233,6 +233,23 @@ public class PlannerTest : BasePlannerTest
         }
     }
 
+    [Fact]
+    public void ValidatesBeaconsAreHeatedWhenValidationIsOn()
+    {
+        // With validation on, planning heat + beacons across the small list must never throw - every kept
+        // beacon is heat-adjacent and the unheatable ones are dropped before validation runs.
+        for (var index = 0; index < SmallListBlueprintStrings.Count; index++)
+        {
+            var options = OilFieldOptions.ForMediumElectricPole;
+            options.ValidateSolution = true;
+            options.AddHeatPipes = true;
+            options.AddBeacons = true;
+
+            var ex = Record.Exception(() => Planner.Execute(options, ParseBlueprint.Execute(SmallListBlueprintStrings[index])));
+            Assert.Null(ex);
+        }
+    }
+
     public static IEnumerable<object[]> SmallListBlueprintIndexes = Enumerable
         .Range(0, SmallListBlueprintStrings.Count)
         .Select(i => new object[] { i });

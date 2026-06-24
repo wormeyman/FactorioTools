@@ -214,6 +214,63 @@ public static class Validate
         }
     }
 
+    public static void NoUnheatedBeacons(Context context)
+    {
+        if (!context.Options.ValidateSolution
+            || !context.Options.AddHeatPipes
+            || !context.Options.AddBeacons
+            || context.HeatPipes is null)
+        {
+            return;
+        }
+
+        var grid = context.Grid;
+        var width = context.Options.BeaconWidth;
+        var height = context.Options.BeaconHeight;
+
+#if USE_STACKALLOC && LOCATION_AS_STRUCT
+        Span<Location> adjacent = stackalloc Location[4];
+#else
+        Span<Location> adjacent = new Location[4];
+#endif
+
+        foreach (var location in grid.EntityLocations.EnumerateItems())
+        {
+            if (grid[location] is not BeaconCenter)
+            {
+                continue;
+            }
+
+            var minX = location.X - ((width - 1) / 2);
+            var maxX = location.X + (width / 2);
+            var minY = location.Y - ((height - 1) / 2);
+            var maxY = location.Y + (height / 2);
+
+            var heated = false;
+            for (var x = minX; x <= maxX && !heated; x++)
+            {
+                for (var y = minY; y <= maxY && !heated; y++)
+                {
+                    grid.GetAdjacent(adjacent, new Location(x, y));
+                    for (var i = 0; i < adjacent.Length; i++)
+                    {
+                        var n = adjacent[i];
+                        if (n.IsValid && grid[n] is HeatPipe)
+                        {
+                            heated = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!heated)
+            {
+                throw new FactorioToolsException("A beacon was left without an adjacent heat pipe on Aquilo, so it would freeze.");
+            }
+        }
+    }
+
     public static void HeatPipesAreConnected(Context context)
     {
         if (context.Options.ValidateSolution && context.Options.AddHeatPipes && context.HeatPipes is not null && context.HeatPipes.Count > 0)
