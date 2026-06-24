@@ -39,6 +39,7 @@ function getWorker(): Worker {
     }
     worker.onerror = (e) => {
       const err = new Error(e.message || "The planner worker failed.")
+      worker = null
       for (const [, req] of pending) {
         req.reject(err)
       }
