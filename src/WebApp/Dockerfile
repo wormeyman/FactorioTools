@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /source
 
 COPY . .
@@ -7,7 +7,7 @@ COPY . .
 # the committed swagger.json is what the front-end client consumes anyway.
 RUN dotnet publish src/WebApp/WebApp.csproj -c Release -o /app --self-contained --runtime linux-musl-x64 /p:PublishReadyToRun=true /p:GenerateSwagger=false
 
-FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine
 WORKDIR /app
 COPY --from=build /app .
 
