@@ -194,14 +194,76 @@ update, which is a bit slower than a single combined run.
 
 ## Testing
 
-- The Vue app has no JS test harness today; verify manually:
-  - `npm run build-wasm` then `npm run build` + `npm run preview` (the WASM bundle
-    does not run under `npm run dev`).
-  - With `showProgress` off: behavior and output identical to today (spot-check a
-    known blueprint's resulting plan summary).
-  - With `showProgress` on: the bar advances per strategy and the final blueprint
-    matches the progress-off result for the same inputs (modulo the documented
-    tie-break edge case).
+The Vue app has no JS test runner today. This change introduces a minimal one
+(Vitest) and covers the feature's risky logic with unit tests; component and
+end-to-end tiers are deliberately deferred and can be layered on later without
+reworking this setup.
+
+### Vitest harness (new)
+
+- Add devDependency `vitest`; add scripts `"test": "vitest run"` and
+  `"test:watch": "vitest"`.
+- Vitest reuses the existing `vite.config.ts` (path aliases, plugins), so no
+  separate build config is needed. Default node environment - no jsdom/browser,
+  because the unit tests do not touch the DOM or the WASM runtime.
+- Tests live next to the code they cover, e.g.
+  `src/vue/src/lib/OilFieldPlanner.test.ts`.
+
+### CI
+
+The existing `build-vue` job in `.github/workflows/ci.yml` already restores npm
+deps on Node 24 in `./src/vue`. Add one step after "Build" in that same job:
+
+```yaml
+      - name: Test
+        run: npm run test
+        working-directory: ${{ env.BUILD_PATH }}
+```
+
+`vitest run` exits non-zero on failure, so a broken test fails the job. No new
+runner, checkout, or matrix is needed, and the unit tests require no .NET/WASM so
+they do not touch the WASM publish path.
+
+### Unit tests for `getPlanWithProgress` (the risky logic)
+
+WASM cannot run in unit tests, so mock at the `wasmPlanner` boundary:
+`vi.mock("./wasmPlanner")` with `plan()` returning canned JSON strings that
+simulate per-strategy responses carrying different `Summary.SelectedPlans[0]`
+metrics. Stub the Pinia store state as needed (`setActivePinia(createPinia())`).
+Cover:
+
+- **Best selection:** given per-strategy responses with differing metrics, the
+  returned result is the best by effects (desc) -> beacons (asc) -> pipes (asc).
+- **Tie-break:** on an exact three-field tie, the earliest selected strategy's
+  response is kept.
+- **Progress callbacks:** `onProgress` fires once per step with `current`
+  advancing `0..total-1` (plus the final `current === total`) and `total` equal to
+  the number of selected pipe strategies.
+- **Error mid-loop:** an error response aborts the loop and is returned
+  immediately; later strategies are not called.
+- **Empty / single strategy:** empty list defers to a single `getPlan()`-style
+  call; a single strategy still reports "1 of 1".
+
+### Manual verification (unchanged, still required)
+
+WASM-in-the-loop behavior stays a manual preview check:
+
+- `npm run build-wasm`, then `npm run build` + `npm run preview` (the WASM bundle
+  does not run under `npm run dev`).
+- With `showProgress` off: behavior and output identical to today.
+- With `showProgress` on: the bar advances per strategy and the final blueprint
+  matches the progress-off result for the same inputs (modulo the documented
+  tie-break edge case).
 - No `.NET` snapshot changes are expected, since core planning is untouched. If
   any `*.verified.txt` snapshot moves, that is a signal something diverged and
   must be investigated rather than accepted.
+
+### Deferred (future, non-blocking)
+
+- **Tier 2 - component tests:** add `@vue/test-utils` + `happy-dom` and a
+  `test.environment` setting to assert the progress bar renders at the right width
+  and label. Cheaper if the bar is extracted into its own small presentational
+  component.
+- **Tier 3 - end-to-end:** Playwright against `npm run preview` asserting
+  progress-on and progress-off yield identical blueprints. Highest fidelity,
+  highest cost; left manual for now.
