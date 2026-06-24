@@ -4,6 +4,7 @@ import {
   HttpResponse,
   OilFieldNormalizeRequest,
   OilFieldNormalizeResponse,
+  OilFieldPlan,
   OilFieldPlanRequest,
   OilFieldPlanResponse,
   PipeStrategy,
@@ -88,6 +89,38 @@ export interface ApiResult<Data> {
   data: Data
 }
 
+export type PlanProgress = { current: number; total: number; label: string }
+
+// Display names mirror OilFieldPlan.ToString in the C# core.
+const pipeStrategyLabels: Record<PipeStrategy, string> = {
+  [PipeStrategy.FbeOriginal]: "FBE",
+  [PipeStrategy.Fbe]: "FBE*",
+  [PipeStrategy.ConnectedCentersDelaunay]: "CC-DT",
+  [PipeStrategy.ConnectedCentersDelaunayMst]: "CC-DT-MST",
+  [PipeStrategy.ConnectedCentersFlute]: "CC-FLUTE",
+}
+
+// Mirrors the planner's ranking: more beacon effects, then fewer beacons, then
+// fewer pipes. Equal plans are NOT "strictly better", so the earliest strategy
+// wins on an exact three-field tie.
+function isStrictlyBetterPlan(candidate: OilFieldPlan, best: OilFieldPlan): boolean {
+  if (candidate.beaconEffectCount !== best.beaconEffectCount) {
+    return candidate.beaconEffectCount > best.beaconEffectCount
+  }
+  if (candidate.beaconCount !== best.beaconCount) {
+    return candidate.beaconCount < best.beaconCount
+  }
+  return candidate.pipeCount < best.pipeCount
+}
+
+function buildPlanRequest(state: OilFieldStoreState): OilFieldPlanRequest {
+  const request: OilFieldPlanRequest = { blueprint: "" }
+  for (const [requestKey, getter] of getEntries(requestPropertyGetters)) {
+    ;(request as unknown as Record<string, unknown>)[requestKey] = getter(state)
+  }
+  return request
+}
+
 async function runWasm<Data>(
   requestJson: string,
   invoke: (json: string) => Promise<string>,
@@ -133,9 +166,51 @@ export async function normalize(): Promise<ApiResult<OilFieldNormalizeResponse> 
 
 export async function getPlan(): Promise<ApiResult<OilFieldPlanResponse> | ApiError> {
   const store = useOilFieldStore()
-  const request: OilFieldPlanRequest = { blueprint: "" }
-  for (const [requestKey, getter] of getEntries(requestPropertyGetters)) {
-    ;(request as unknown as Record<string, unknown>)[requestKey] = getter(store.$state)
-  }
+  const request = buildPlanRequest(store.$state)
   return await runWasm<OilFieldPlanResponse>(JSON.stringify(request), wasmPlanner.plan)
+}
+
+export async function getPlanWithProgress(
+  onProgress: (progress: PlanProgress) => void,
+): Promise<ApiResult<OilFieldPlanResponse> | ApiError> {
+  const store = useOilFieldStore()
+  const baseRequest = buildPlanRequest(store.$state)
+  const strategies = baseRequest.pipeStrategies ?? []
+
+  // No split possible: defer to the single combined call so behavior and
+  // validation exactly match the non-progress path.
+  if (strategies.length === 0) {
+    return await runWasm<OilFieldPlanResponse>(JSON.stringify(baseRequest), wasmPlanner.plan)
+  }
+
+  const total = strategies.length
+  let best: ApiResult<OilFieldPlanResponse> | null = null
+  let bestPlan: OilFieldPlan | null = null
+
+  for (let i = 0; i < total; i++) {
+    const strategy = strategies[i]
+    onProgress({ current: i, total, label: pipeStrategyLabels[strategy] })
+    // Yield a macrotask so the browser paints the bar before the next blocking
+    // WASM call (mirrors the paint yield in OilField.vue's invokeApi).
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const request: OilFieldPlanRequest = { ...baseRequest, pipeStrategies: [strategy] }
+    const result = await runWasm<OilFieldPlanResponse>(JSON.stringify(request), wasmPlanner.plan)
+    if (result.isError) {
+      return result
+    }
+
+    const plan = result.data.summary.selectedPlans[0] ?? null
+    if (
+      best === null ||
+      bestPlan === null ||
+      (plan !== null && isStrictlyBetterPlan(plan, bestPlan))
+    ) {
+      best = result
+      bestPlan = plan
+    }
+  }
+
+  onProgress({ current: total, total, label: "Finalizing" })
+  return best as ApiResult<OilFieldPlanResponse>
 }

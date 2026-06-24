@@ -116,6 +116,23 @@
         Plan oil field
       </button>
     </div>
+    <div v-if="submitting && planProgress" class="alert alert-info mt-2 mb-0" role="status">
+      <div class="mb-2">
+        Pipe strategies: {{ planProgress.label }} ({{ progressStep }} of {{ planProgress.total }})
+      </div>
+      <div class="progress" style="height: 1.5rem">
+        <div
+          class="progress-bar progress-bar-striped progress-bar-animated"
+          role="progressbar"
+          :style="{ width: progressPercent + '%' }"
+          :aria-valuenow="progressPercent"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          {{ progressPercent }}%
+        </div>
+      </div>
+    </div>
     <OilFieldPlanView v-if="plan" :plan="plan" />
     <ResponseErrorView v-if="planError" :error="planError" />
   </form>
@@ -174,7 +191,14 @@
 </template>
 
 <script lang="ts">
-import { ApiError, ApiResult, getPlan, normalize } from "../lib/OilFieldPlanner"
+import {
+  ApiError,
+  ApiResult,
+  getPlan,
+  getPlanWithProgress,
+  normalize,
+  PlanProgress,
+} from "../lib/OilFieldPlanner"
 import BeaconForm from "../components/BeaconForm.vue"
 import ElectricPoleSelect from "../components/ElectricPoleForm.vue"
 import HeatPipeForm from "../components/HeatPipeForm.vue"
@@ -209,6 +233,7 @@ export default {
         normalizedAt: new Date(0),
         recentlyNormalized: false,
         submitting: false,
+        planProgress: null as null | PlanProgress,
         normalizeError: null as null | ApiError,
         plan: null as null | ApiResult<OilFieldPlanResponse>,
         planError: null as null | ApiError,
@@ -222,6 +247,7 @@ export default {
         "inputBlueprint",
         "addHeatPipes",
         "addBeacons",
+        "showProgress",
       ),
     )
   },
@@ -235,6 +261,20 @@ export default {
     removeEventListener("paste", this.handlePasteEvent)
   },
   computed: {
+    progressPercent(): number {
+      const p = this.planProgress
+      if (!p || p.total === 0) {
+        return 0
+      }
+      return Math.round((p.current / p.total) * 100)
+    },
+    progressStep(): number {
+      const p = this.planProgress
+      if (!p) {
+        return 0
+      }
+      return Math.min(p.current + 1, p.total)
+    },
     cannotSubmit() {
       return !this.inputBlueprint.trim() || this.submitting
     },
@@ -246,7 +286,23 @@ export default {
       return `https://fbeworkeyman.wormeyman.workers.dev/?source=${this.inputBlueprint}`
     },
   },
+  watch: {
+    addBeacons() {
+      this.autoEnableProgressForHeatBeacons()
+    },
+    addHeatPipes() {
+      this.autoEnableProgressForHeatBeacons()
+    },
+  },
   methods: {
+    autoEnableProgressForHeatBeacons() {
+      // Heating beacons is the slowest plan (see the heat+beacons notice), so
+      // default the progress bar on when both are selected - the user sees
+      // movement instead of a frozen spinner. They can still turn it back off.
+      if (this.addBeacons && this.addHeatPipes) {
+        this.showProgress = true
+      }
+    },
     toggleAdvancedOptions() {
       this.useAdvancedOptions = !this.useAdvancedOptions
     },
@@ -368,7 +424,11 @@ export default {
     async submit() {
       await this.invokeApi(async () => {
         this.normalizeError = null
-        const dataOrError = await getPlan()
+        const dataOrError = this.showProgress
+          ? await getPlanWithProgress((p) => {
+              this.planProgress = p
+            })
+          : await getPlan()
         if (dataOrError.isError) {
           this.plan = null
           this.planError = dataOrError
@@ -391,6 +451,7 @@ export default {
         await api()
       } finally {
         this.submitting = false
+        this.planProgress = null
       }
     },
     async overrideLocalSettings() {

@@ -30,6 +30,11 @@
       but checks for problems in the resulting blueprint)
     </div>
     <div class="form-check">
+      <input type="checkbox" class="form-check-input" id="show-progress" v-model="showProgress" />
+      <label class="form-check-label" for="show-progress">Show planning progress</label> (slower;
+      plans one strategy at a time so a progress bar can update)
+    </div>
+    <div class="form-check">
       <input
         type="checkbox"
         class="form-check-input"
@@ -166,6 +171,7 @@ export default {
         "useStagingApi",
         "optimizePipes",
         "validateSolution",
+        "showProgress",
         "pipeStrategyFbeOriginal",
         "pipeStrategyFbe",
         "pipeStrategyConnectedCentersDelaunay",
@@ -194,6 +200,7 @@ export default {
       this.useStagingApi = defaults.useStagingApi
       this.optimizePipes = defaults.optimizePipes
       this.validateSolution = defaults.validateSolution
+      this.showProgress = defaults.showProgress
       this.pipeStrategyFbeOriginal = defaults.pipeStrategyFbeOriginal
       this.pipeStrategyFbe = defaults.pipeStrategyFbe
       this.pipeStrategyConnectedCentersDelaunay = defaults.pipeStrategyConnectedCentersDelaunay
