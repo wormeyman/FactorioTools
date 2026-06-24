@@ -1,78 +1,43 @@
-// Thin main-thread client for the planner Web Worker (planner.worker.ts). Keeps the same
-// plan/normalize Promise interface OilFieldPlanner.ts expects, and adds cancel().
+// Boots the .NET WASM runtime once and exposes the Plan/Normalize exports.
+// The bundle is published into public/framework by `npm run build-wasm` and
+// served at the site root, so dotnet.js lives at `framework/dotnet.js` and
+// resolves its sibling assets relative to itself.
+//
+// The runtime is booted and invoked on the main thread on purpose: the
+// single-threaded .NET WASM runtime deadlocks during `create()` when booted in
+// a dedicated Web Worker (it is designed to initialize on the browser's main
+// thread). Running it in a worker would require the multithreaded build plus
+// SharedArrayBuffer and COOP/COEP cross-origin-isolation headers.
 
-export class PlanCancelledError extends Error {
-  constructor() {
-    super("Planning was cancelled.")
-    this.name = "PlanCancelledError"
+type Exports = {
+  Interop: {
+    Plan: (requestJson: string) => string
+    Normalize: (requestJson: string) => string
   }
 }
 
-type PendingRequest = {
-  resolve: (responseJson: string) => void
-  reject: (error: unknown) => void
-}
+let exportsPromise: Promise<Exports> | null = null
 
-let worker: Worker | null = null
-let nextId = 0
-const pending = new Map<number, PendingRequest>()
-
-function getWorker(): Worker {
-  if (!worker) {
-    worker = new Worker(new URL("./planner.worker.ts", import.meta.url), { type: "module" })
-    worker.onmessage = (e: MessageEvent) => {
-      const { id, responseJson, error } = e.data as {
-        id: number
-        responseJson?: string
-        error?: string
-      }
-      const req = pending.get(id)
-      if (!req) {
-        return
-      }
-      pending.delete(id)
-      if (error !== undefined) {
-        req.reject(new Error(error))
-      } else {
-        req.resolve(responseJson as string)
-      }
-    }
-    worker.onerror = (e) => {
-      const err = new Error(e.message || "The planner worker failed.")
-      worker = null
-      for (const [, req] of pending) {
-        req.reject(err)
-      }
-      pending.clear()
-    }
+function bootExports(): Promise<Exports> {
+  if (!exportsPromise) {
+    exportsPromise = (async () => {
+      // Resolve dotnet.js relative to the deployed base (root '/').
+      const dotnetUrl = `${__BASE_PATH__}framework/dotnet.js`
+      const { dotnet } = await import(/* @vite-ignore */ dotnetUrl)
+      const { getAssemblyExports, getConfig } = await dotnet.withDiagnosticTracing(false).create()
+      const config = getConfig()
+      return (await getAssemblyExports(config.mainAssemblyName)) as Exports
+    })()
   }
-  return worker
+  return exportsPromise
 }
 
-function invoke(op: "plan" | "normalize", requestJson: string): Promise<string> {
-  const w = getWorker()
-  const id = nextId++
-  return new Promise<string>((resolve, reject) => {
-    pending.set(id, { resolve, reject })
-    w.postMessage({ id, op, requestJson })
-  })
+export async function plan(requestJson: string): Promise<string> {
+  const exports = await bootExports()
+  return exports.Interop.Plan(requestJson)
 }
 
-export function plan(requestJson: string): Promise<string> {
-  return invoke("plan", requestJson)
-}
-
-export function normalize(requestJson: string): Promise<string> {
-  return invoke("normalize", requestJson)
-}
-
-export function cancel(): void {
-  if (worker) {
-    worker.terminate()
-    worker = null
-  }
-  for (const [, req] of pending) {
-    req.reject(new PlanCancelledError())
-  }
-  pending.clear()
+export async function normalize(requestJson: string): Promise<string> {
+  const exports = await bootExports()
+  return exports.Interop.Normalize(requestJson)
 }
