@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ExcludeXmlAssemblyFiles>false</ExcludeXmlAssemblyFiles>
@@ -16,6 +16,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
+    <!-- Pinned to 8.0.x: 9.0+/10.0 pull in Microsoft.OpenApi 2.x, whose schema model is a
+         breaking change that Swashbuckle 6.x cannot consume. The package is not part of the
+         shared framework, so it runs fine on the net10 host. -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
@@ -41,7 +44,7 @@
   -->
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(GenerateSwagger)' != 'false'">
     <Exec Command="dotnet tool restore" StandardOutputImportance="normal" />
-    <!-- DOTNET_ROLL_FORWARD=Major lets the net7-targeted Swashbuckle CLI run on net8-only hosts (CI runners), which otherwise fail with exit code 150. -->
+    <!-- DOTNET_ROLL_FORWARD=Major lets the net7-targeted Swashbuckle CLI run on net10-only hosts (CI runners), which otherwise fail with exit code 150. -->
     <Exec Command="dotnet swagger tofile --output swagger.json $(OutputPath)\$(AssemblyName).dll v1" StandardOutputImportance="normal" EnvironmentVariables="DOTNET_ROLL_FORWARD=Major" />
   </Target>
 

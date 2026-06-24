@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Run dotnet inside the pinned .NET 8 SDK container, so you can build and test
-# without installing the .NET 8 SDK locally (handy on machines that only have a
-# newer SDK than the global.json pin). Works with OrbStack or Docker Desktop.
+# Run dotnet inside the pinned .NET 10 SDK container, so you can build and test
+# without installing the .NET 10 SDK locally (handy on machines that only have a
+# different SDK than the global.json pin). Works with OrbStack or Docker Desktop.
 #
 # Usage: ./docker-build.sh [dotnet args...]
 #   ./docker-build.sh                     # default: test the core dev loop
@@ -22,7 +22,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NUGET_CACHE="${FACTORIO_NUGET_CACHE:-$HOME/.cache/factorio-nuget}"
-SDK_IMAGE="${FACTORIO_SDK_IMAGE:-mcr.microsoft.com/dotnet/sdk:8.0}"
+SDK_IMAGE="${FACTORIO_SDK_IMAGE:-mcr.microsoft.com/dotnet/sdk:10.0}"
 
 mkdir -p "$NUGET_CACHE"
 

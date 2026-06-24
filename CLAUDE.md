@@ -8,7 +8,7 @@ FactorioTools is a Factorio oil-field (outpost) blueprint planner. Given a bluep
 
 ## Prerequisites
 
-- **.NET SDK 8.0.100** (pinned in `global.json`, `rollForward: latestFeature`).
+- **.NET SDK 10.0.100** (pinned in `global.json`, `rollForward: latestMajor`).
 - **Git submodules are required** (`FluteSharp`, `delaunator-sharp`, `CSharp.lua`). Clone/update with `git submodule update --init --recursive`. CI checks out with `submodules: recursive`.
 - Node 24 (Active LTS) for the Vue front-end.
 - The browser-WASM project needs `dotnet workload restore`.
@@ -42,15 +42,15 @@ npm run build-wasm     # publish BrowserWasm and copy the bundle (incl. dotnet.j
   gitignored and absent in a fresh checkout, so the copy must create it first
   (`mkdir -p public`) - otherwise `cp -r .../_framework public/...` flattens the
   bundle's contents into the `public/` root and the `framework/dotnet.js` import
-  404s on the deployed site. Requires the .NET 8 SDK plus the wasm-tools
-  workload; without a local .NET 8 SDK, publish via `./docker-build.sh` (the SDK image
+  404s on the deployed site. Requires the .NET 10 SDK plus the wasm-tools
+  workload; without a local .NET 10 SDK, publish via `./docker-build.sh` (the SDK image
   also needs `python3` on PATH for the emscripten native relink step) and copy
-  `src/BrowserWasm/bin/Release/net8.0/browser-wasm/AppBundle/_framework` into
+  `src/BrowserWasm/bin/Release/net10.0/browser-wasm/AppBundle/_framework` into
   `src/vue/public/framework`. `npm run dev` / `npm run build` serve those assets.
 
-### Building without a local .NET 8 SDK (Docker / OrbStack)
+### Building without a local .NET 10 SDK (Docker / OrbStack)
 
-If the machine only has a newer SDK than the `global.json` pin, run the build inside the pinned SDK image instead of installing .NET 8. `docker-build.sh` wraps this (works with OrbStack or Docker Desktop) - it mounts the checkout, caches NuGet on the host, and runs as the current user so artifacts are not root-owned:
+If the machine only has a different SDK than the `global.json` pin, run the build inside the pinned SDK image instead of installing .NET 10. `docker-build.sh` wraps this (works with OrbStack or Docker Desktop) - it mounts the checkout, caches NuGet on the host, and runs as the current user so artifacts are not root-owned:
 
 ```bash
 ./docker-build.sh                                  # default: test the core dev loop
