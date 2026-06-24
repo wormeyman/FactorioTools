@@ -180,6 +180,59 @@ public class PlannerTest : BasePlannerTest
 #endif
     }
 
+    [Theory]
+    [MemberData(nameof(SmallListBlueprintIndexes))]
+    public void HeatsEveryKeptBeaconWhenBeaconsAndHeatAreOn(int index)
+    {
+        // On Aquilo an unheated beacon freezes and gives no effects, so every beacon left in the
+        // output must have an adjacent heat pipe; unheatable beacons must be dropped, not kept.
+        var options = OilFieldOptions.ForMediumElectricPole;
+        options.ValidateSolution = true;
+        options.AddHeatPipes = true;
+        options.AddBeacons = true;
+        var result = Planner.Execute(options, ParseBlueprint.Execute(SmallListBlueprintStrings[index]));
+        var grid = result.Context.Grid;
+
+        var width = options.BeaconWidth;
+        var height = options.BeaconHeight;
+
+        foreach (var location in grid.EntityLocations.EnumerateItems())
+        {
+            if (grid[location] is not BeaconCenter)
+            {
+                continue;
+            }
+
+            var minX = location.X - ((width - 1) / 2);
+            var maxX = location.X + (width / 2);
+            var minY = location.Y - ((height - 1) / 2);
+            var maxY = location.Y + (height / 2);
+
+            var heated = false;
+            for (var x = minX; x <= maxX && !heated; x++)
+            {
+                for (var y = minY; y <= maxY && !heated; y++)
+                {
+                    foreach (var n in new[]
+                    {
+                        new Location(x - 1, y), new Location(x + 1, y),
+                        new Location(x, y - 1), new Location(x, y + 1),
+                    })
+                    {
+                        var insideFootprint = n.X >= minX && n.X <= maxX && n.Y >= minY && n.Y <= maxY;
+                        if (!insideFootprint && grid.IsInBounds(n) && grid[n] is HeatPipe)
+                        {
+                            heated = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            Assert.True(heated, $"beacon at {location} (index {index}) is not heat-adjacent");
+        }
+    }
+
     public static IEnumerable<object[]> SmallListBlueprintIndexes = Enumerable
         .Range(0, SmallListBlueprintStrings.Count)
         .Select(i => new object[] { i });

@@ -52,6 +52,39 @@ public static class AddPipes
         {
             // Visualizer.Show(context.Grid, bestSolution.Beacons.Select(c => (DelaunatorSharp.IPoint)new DelaunatorSharp.Point(c.X, c.Y)), Array.Empty<DelaunatorSharp.IEdge>());
             AddBeaconsToGrid(context.Grid, context.Options, bestBeacons.Beacons);
+
+            // On Aquilo, extend the heat network to reach the placed beacons, then drop any beacon that still cannot be
+            // heated (an unheated beacon freezes and gives no effects). Selection already ran on the pre-drop effect
+            // counts (fast path); update the reported counts so the summary matches the blueprint.
+            if (context.Options.AddHeatPipes && context.HeatPipes is not null)
+            {
+                var heatedBeacons = AddHeatPipes.ExtendToBeacons(context, bestBeacons.Beacons);
+
+                var keptEffects = 0;
+                var keptCount = 0;
+                for (var i = 0; i < bestBeacons.Beacons.Count; i++)
+                {
+                    var center = bestBeacons.Beacons[i];
+                    if (heatedBeacons.Contains(center))
+                    {
+                        keptEffects += bestBeacons.EffectsGivenCounts[i];
+                        keptCount++;
+                    }
+                    else
+                    {
+                        RemoveEntity(context.Grid, center, context.Options.BeaconWidth, context.Options.BeaconHeight);
+                    }
+                }
+
+                if (selectedPlans.Count > 0)
+                {
+                    selectedPlans[0] = selectedPlans[0] with
+                    {
+                        BeaconEffectCount = keptEffects,
+                        BeaconCount = keptCount,
+                    };
+                }
+            }
         }
 
         return (selectedPlans, alternatePlans, unusedPlans);
