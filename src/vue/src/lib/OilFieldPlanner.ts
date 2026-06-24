@@ -10,6 +10,7 @@ import {
 } from "./FactorioToolsApi"
 import { getEntries } from "./helpers"
 import * as wasmPlanner from "./wasmPlanner"
+import { PlanCancelledError } from "./wasmPlanner"
 
 type RequestPropertyGetters = {
   [Property in keyof OilFieldPlanRequest]-?: (
@@ -117,6 +118,9 @@ async function runWasm<Data>(
 
     return { isError: false, data: parsed as Data }
   } catch (e) {
+    if (e instanceof PlanCancelledError) {
+      throw e
+    }
     return {
       isError: true,
       title: "An unexpected error occurred.",

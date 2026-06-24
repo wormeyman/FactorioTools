@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Knapcode.FactorioTools.OilField;
 
-public record BeaconPlannerResult(List<Location> Beacons, int Effects);
+public record BeaconPlannerResult(List<Location> Beacons, int Effects, List<int> EffectsGivenCounts);
 
 public static class PlanBeacons
 {
@@ -34,7 +34,7 @@ public static class PlanBeacons
                 continue;
             }
 
-            (var beacons, var effects) = strategy switch
+            (var beacons, var effects, var effectsGivenCounts) = strategy switch
             {
                 BeaconStrategy.FbeOriginal => PlanBeaconsFbe.Execute(context, strategy),
                 BeaconStrategy.Fbe => PlanBeaconsFbe.Execute(context, strategy),
@@ -44,7 +44,7 @@ public static class PlanBeacons
 
             completedStrategies[(int)strategy] = true;
 
-            solutions.Add(new BeaconSolution(strategy, beacons, effects));
+            solutions.Add(new BeaconSolution(strategy, beacons, effects, effectsGivenCounts));
         }
 
         foreach (var pipe in pipes.EnumerateItems())

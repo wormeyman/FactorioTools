@@ -209,6 +209,28 @@ public static class AddHeatPipes
 
         AddTile(coveredPipes, coveredCenters, chosen, seed, uncoveredPipes, uncoveredCenters);
 
+        GrowFrom(context, chosen, candidates, coveredPipes, coveredCenters, uncoveredPipes, uncoveredCenters);
+    }
+
+    /// <summary>
+    /// Grows an already-seeded connected network (<paramref name="chosen"/> must be non-empty) until every reachable
+    /// uncovered target is covered, bridging through empty tiles when no adjacent candidate makes progress.
+    /// </summary>
+    private static void GrowFrom(
+        Context context,
+        ILocationSet chosen,
+        List<Location> candidates,
+        ILocationDictionary<List<Location>> coveredPipes,
+        ILocationDictionary<List<Location>> coveredCenters,
+        ILocationSet uncoveredPipes,
+        ILocationSet uncoveredCenters)
+    {
+#if USE_STACKALLOC && LOCATION_AS_STRUCT
+        Span<Location> adjacent = stackalloc Location[4];
+#else
+        Span<Location> adjacent = new Location[4];
+#endif
+
         // Candidates we could not reach by bridging; skip them on later passes to avoid looping.
         var unreachable = context.GetLocationSet();
 
@@ -274,6 +296,134 @@ public static class AddHeatPipes
                 AddTile(coveredPipes, coveredCenters, chosen, path[i], uncoveredPipes, uncoveredCenters);
             }
         }
+    }
+
+    /// <summary>
+    /// Extends the already-placed heat network (<see cref="Context.HeatPipes"/>) to reach the placed beacons. A beacon
+    /// is heated when a heat pipe is orthogonally adjacent to its footprint. The footprint is derived from
+    /// <see cref="OilFieldOptions.BeaconWidth"/> / <see cref="OilFieldOptions.BeaconHeight"/> so custom beacon sizes
+    /// work. New heat tiles are placed on the grid and added to <see cref="Context.HeatPipes"/>. Returns the set of
+    /// beacon center locations that ended up heated; beacons not in the set are boxed in and cannot be heated.
+    /// </summary>
+    public static ILocationSet ExtendToBeacons(Context context, IReadOnlyList<Location> beaconCenters)
+    {
+        var grid = context.Grid;
+        var heatedBeacons = context.GetLocationSet(allowEnumerate: true);
+
+        if (context.HeatPipes is null || beaconCenters.Count == 0)
+        {
+            return heatedBeacons;
+        }
+
+        var width = context.Options.BeaconWidth;
+        var height = context.Options.BeaconHeight;
+
+        var uncoveredBeacons = context.GetLocationSet(allowEnumerate: true);
+        for (var i = 0; i < beaconCenters.Count; i++)
+        {
+            uncoveredBeacons.Add(beaconCenters[i]);
+        }
+
+        var candidates = new List<Location>();
+        var coveredBeacons = context.GetLocationDictionary<List<Location>>();
+
+        // Empty placeholders for the pipe coverage channel that GrowFrom shares with the pumpjack/pipe router.
+        var noPipeCoverage = context.GetLocationDictionary<List<Location>>();
+        var noPipes = context.GetLocationSet(allowEnumerate: true);
+
+#if USE_STACKALLOC && LOCATION_AS_STRUCT
+        Span<Location> adjacent = stackalloc Location[4];
+#else
+        Span<Location> adjacent = new Location[4];
+#endif
+
+        for (var b = 0; b < beaconCenters.Count; b++)
+        {
+            var center = beaconCenters[b];
+            var minX = center.X - ((width - 1) / 2);
+            var maxX = center.X + (width / 2);
+            var minY = center.Y - ((height - 1) / 2);
+            var maxY = center.Y + (height / 2);
+
+            // First pass: is this beacon already adjacent to the existing network?
+            var alreadyHeated = false;
+            for (var x = minX; x <= maxX && !alreadyHeated; x++)
+            {
+                for (var y = minY; y <= maxY && !alreadyHeated; y++)
+                {
+                    grid.GetAdjacent(adjacent, new Location(x, y));
+                    for (var i = 0; i < adjacent.Length; i++)
+                    {
+                        var n = adjacent[i];
+                        if (n.IsValid && grid[n] is HeatPipe)
+                        {
+                            alreadyHeated = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (alreadyHeated)
+            {
+                uncoveredBeacons.Remove(center);
+                continue;
+            }
+
+            // Second pass: register empty footprint-adjacent tiles as candidates that would heat this beacon.
+            for (var x = minX; x <= maxX; x++)
+            {
+                for (var y = minY; y <= maxY; y++)
+                {
+                    grid.GetAdjacent(adjacent, new Location(x, y));
+                    for (var i = 0; i < adjacent.Length; i++)
+                    {
+                        var n = adjacent[i];
+                        if (!n.IsValid)
+                        {
+                            continue;
+                        }
+
+                        var insideFootprint = n.X >= minX && n.X <= maxX && n.Y >= minY && n.Y <= maxY;
+                        if (!insideFootprint && grid.IsEmpty(n))
+                        {
+                            AddCoverage(coveredBeacons, candidates, n, center);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Seed the grow with the entire existing network so the extension stays one connected component.
+        var chosen = context.GetLocationSet(allowEnumerate: true);
+        chosen.UnionWith(context.HeatPipes);
+
+        if (candidates.Count > 0 && uncoveredBeacons.Count > 0)
+        {
+            GrowFrom(context, chosen, candidates, noPipeCoverage, coveredBeacons, noPipes, uncoveredBeacons);
+        }
+
+        // Place the newly chosen tiles (chosen minus the pre-existing network) and grow the network set.
+        foreach (var location in chosen.EnumerateItems())
+        {
+            if (context.HeatPipes.Contains(location))
+            {
+                continue;
+            }
+
+            grid.AddEntity(location, new HeatPipe(grid.GetId()));
+            context.HeatPipes.Add(location);
+        }
+
+        for (var i = 0; i < beaconCenters.Count; i++)
+        {
+            if (!uncoveredBeacons.Contains(beaconCenters[i]))
+            {
+                heatedBeacons.Add(beaconCenters[i]);
+            }
+        }
+
+        return heatedBeacons;
     }
 
     private static int Gain(

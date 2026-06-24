@@ -223,6 +223,7 @@ public static class Planner
 
         Validate.CountUnheatedTargets(context, out var unheatedPumpjacks, out var unheatedPipes);
         Validate.HeatPipesAreConnected(context);
+        Validate.NoUnheatedBeacons(context);
 
         var planSummary = new OilFieldPlanSummary(
             missingPumpjacks,
