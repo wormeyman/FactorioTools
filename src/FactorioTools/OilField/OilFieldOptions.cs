@@ -264,4 +264,30 @@ public class OilFieldOptions
     {
         { ItemNames.Vanilla.SpeedModule3, 2 },
     };
+
+    /// <summary>
+    /// The quality of the pumpjack entities in the output blueprint. Output-only; does not affect planning.
+    /// </summary>
+    public Quality PumpjackQuality { get; set; } = Quality.Normal;
+
+    /// <summary>
+    /// The quality of the beacon entities in the output blueprint. Output-only; does not affect planning.
+    /// </summary>
+    public Quality BeaconQuality { get; set; } = Quality.Normal;
+
+    /// <summary>
+    /// The quality of the electric pole entities. Higher quality enlarges the supply area and wire reach
+    /// the planner uses (see Context), so this affects planning, not just output.
+    /// </summary>
+    public Quality ElectricPoleQuality { get; set; } = Quality.Normal;
+
+    /// <summary>
+    /// The quality of the modules inserted into pumpjacks. Output-only; does not affect planning.
+    /// </summary>
+    public Quality PumpjackModuleQuality { get; set; } = Quality.Normal;
+
+    /// <summary>
+    /// The quality of the modules inserted into beacons. Output-only; does not affect planning.
+    /// </summary>
+    public Quality BeaconModuleQuality { get; set; } = Quality.Normal;
 }

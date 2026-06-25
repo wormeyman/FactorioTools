@@ -25,4 +25,15 @@ public class OilFieldOptionsTest
     {
         Assert.Equal(Enum.GetValues<BeaconStrategy>().Except(new[] { BeaconStrategy.FbeOriginal }).Order(), OilFieldOptions.DefaultBeaconStrategies);
     }
+
+    [Fact]
+    public void QualityDefaultsAreNormal()
+    {
+        var options = new OilFieldOptions();
+        Assert.Equal(Quality.Normal, options.PumpjackQuality);
+        Assert.Equal(Quality.Normal, options.BeaconQuality);
+        Assert.Equal(Quality.Normal, options.ElectricPoleQuality);
+        Assert.Equal(Quality.Normal, options.PumpjackModuleQuality);
+        Assert.Equal(Quality.Normal, options.BeaconModuleQuality);
+    }
 }
