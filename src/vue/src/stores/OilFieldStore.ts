@@ -41,6 +41,11 @@ const defaults = {
   beaconStrategySnug: true,
   addHeatPipes: false,
   showProgress: false,
+  pumpjackQuality: "Normal",
+  pumpjackModuleQuality: "Normal",
+  beaconQuality: "Normal",
+  beaconModuleQuality: "Normal",
+  electricPoleQuality: "Normal",
 }
 export type OilFieldStoreState = typeof defaults
 
@@ -87,6 +92,11 @@ const storeToQuery: StoreToQuery = {
   beaconStrategySnug: "beaconsSnug",
   addHeatPipes: "heatPipes",
   showProgress: "progress",
+  pumpjackQuality: "pumpQ",
+  pumpjackModuleQuality: "pumpModQ",
+  beaconQuality: "beaconQ",
+  beaconModuleQuality: "beaconModQ",
+  electricPoleQuality: "poleQ",
 } as const
 
 type OilFieldStore = Store<"OilFieldStore", OilFieldStoreState>

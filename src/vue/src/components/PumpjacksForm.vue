@@ -10,6 +10,18 @@
       v-model="pumpjackModule"
       v-model:isCustom="pumpjackModuleIsCustom"
     />
+    <QualitySelect
+      label="Pumpjack quality"
+      idPrefix="pumpjack"
+      :showAdvancedOptions="showAdvancedOptions"
+      v-model="pumpjackQuality"
+    />
+    <QualitySelect
+      label="Pumpjack module quality"
+      idPrefix="pumpjack-module"
+      :showAdvancedOptions="showAdvancedOptions"
+      v-model="pumpjackModuleQuality"
+    />
   </fieldset>
 </template>
 
@@ -18,6 +30,7 @@ import { storeToRefs } from "pinia"
 import { pick } from "../lib/helpers"
 import { useOilFieldStore } from "../stores/OilFieldStore"
 import ModuleSelect from "./ModuleSelect.vue"
+import QualitySelect from "./QualitySelect.vue"
 
 export default {
   props: {
@@ -27,8 +40,14 @@ export default {
     },
   },
   data() {
-    return pick(storeToRefs(useOilFieldStore()), "pumpjackModule", "pumpjackModuleIsCustom")
+    return pick(
+      storeToRefs(useOilFieldStore()),
+      "pumpjackModule",
+      "pumpjackModuleIsCustom",
+      "pumpjackQuality",
+      "pumpjackModuleQuality",
+    )
   },
-  components: { ModuleSelect },
+  components: { ModuleSelect, QualitySelect },
 }
 </script>
