@@ -195,14 +195,8 @@ public class OilFieldOptions
     public double ElectricPoleWireReach
     {
         get => _electricPoleWireReach;
-        set
-        {
-            _electricPoleWireReach = value;
-            ElectricPoleWireReachSquared = value * value;
-        }
+        set => _electricPoleWireReach = value;
     }
-
-    internal double ElectricPoleWireReachSquared { get; private set; } = DefaultElectricPoleWireReach * DefaultElectricPoleWireReach;
 
     /// <summary>
     /// The width of the electric pole entity.
