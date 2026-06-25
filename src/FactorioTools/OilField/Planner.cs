@@ -16,7 +16,12 @@ public static class Planner
         options.BeaconStrategies = OilFieldOptions.AllBeaconStrategies.ToList();
         options.ValidateSolution = true;
 
-        var inputBlueprint = new Blueprint
+        return Execute(options, GetSampleBlueprint());
+    }
+
+    public static Blueprint GetSampleBlueprint()
+    {
+        return new Blueprint
         {
             Entities = new[]
             {
@@ -78,8 +83,6 @@ public static class Planner
             },
             Item = ItemNames.Vanilla.Blueprint,
         };
-
-        return Execute(options, inputBlueprint);
     }
 
     public static PlannerResult Execute(OilFieldOptions options, Blueprint inputBlueprint)

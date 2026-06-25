@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Invocation;
 using Knapcode.FactorioTools.OilField;
 
 public class Program
@@ -25,9 +26,30 @@ public class Program
         var sampleCommand = new Command("sample", "Execute the oil field planner sample");
         oilFieldCommand.Add(sampleCommand);
 
-        sampleCommand.SetHandler(() =>
+        var pumpjackQualityOption = new Option<Quality>("--pumpjack-quality", () => Quality.Normal, "Pumpjack entity quality");
+        var beaconQualityOption = new Option<Quality>("--beacon-quality", () => Quality.Normal, "Beacon entity quality");
+        var electricPoleQualityOption = new Option<Quality>("--electric-pole-quality", () => Quality.Normal, "Electric pole entity quality");
+        var pumpjackModuleQualityOption = new Option<Quality>("--pumpjack-module-quality", () => Quality.Normal, "Pumpjack module quality");
+        var beaconModuleQualityOption = new Option<Quality>("--beacon-module-quality", () => Quality.Normal, "Beacon module quality");
+        sampleCommand.AddOption(pumpjackQualityOption);
+        sampleCommand.AddOption(beaconQualityOption);
+        sampleCommand.AddOption(electricPoleQualityOption);
+        sampleCommand.AddOption(pumpjackModuleQualityOption);
+        sampleCommand.AddOption(beaconModuleQualityOption);
+
+        sampleCommand.SetHandler((InvocationContext invocationContext) =>
         {
-            var (context, summary) = Planner.ExecuteSample();
+            var options = OilFieldOptions.ForMediumElectricPole;
+            options.PipeStrategies = OilFieldOptions.AllPipeStrategies.ToList();
+            options.BeaconStrategies = OilFieldOptions.AllBeaconStrategies.ToList();
+            options.ValidateSolution = true;
+            options.PumpjackQuality = invocationContext.ParseResult.GetValueForOption(pumpjackQualityOption);
+            options.BeaconQuality = invocationContext.ParseResult.GetValueForOption(beaconQualityOption);
+            options.ElectricPoleQuality = invocationContext.ParseResult.GetValueForOption(electricPoleQualityOption);
+            options.PumpjackModuleQuality = invocationContext.ParseResult.GetValueForOption(pumpjackModuleQualityOption);
+            options.BeaconModuleQuality = invocationContext.ParseResult.GetValueForOption(beaconModuleQualityOption);
+
+            var (context, summary) = Planner.Execute(options, Planner.GetSampleBlueprint());
             Console.WriteLine(context.Grid.ToString());
         });
 
