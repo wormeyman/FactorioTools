@@ -258,9 +258,15 @@ public static class GridToBlueprintString
 
             foreach (var entity in blueprint.Entities)
             {
-                (var width, var height) = EntityNameToSize[entity.Name];
-                maxX = Math.Max(maxX, entity.Position.X + width / 2);
-                maxY = Math.Max(maxY, entity.Position.Y + height / 2);
+                // Fall back to a 1x1 footprint for entities not in the table (e.g. avoid-entity walls or custom
+                // entity names) so the FBE offset calculation never throws on an unknown name.
+                if (!EntityNameToSize.TryGetValue(entity.Name, out var size))
+                {
+                    size = (1, 1);
+                }
+
+                maxX = Math.Max(maxX, entity.Position.X + size.Width / 2);
+                maxY = Math.Max(maxY, entity.Position.Y + size.Height / 2);
                 maxEntityNumber = Math.Max(maxEntityNumber, entity.EntityNumber);
             }
 

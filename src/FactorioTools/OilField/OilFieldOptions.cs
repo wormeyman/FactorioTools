@@ -187,16 +187,11 @@ public class OilFieldOptions
     public int ElectricPoleSupplyHeight { get; set; } = 7;
 
     private const double DefaultElectricPoleWireReach = 9;
-    private double _electricPoleWireReach = DefaultElectricPoleWireReach;
 
     /// <summary>
     /// The wire reach for the electric pole. This is how far apart electric poles can be but still be connected.
     /// </summary>
-    public double ElectricPoleWireReach
-    {
-        get => _electricPoleWireReach;
-        set => _electricPoleWireReach = value;
-    }
+    public double ElectricPoleWireReach { get; set; } = DefaultElectricPoleWireReach;
 
     /// <summary>
     /// The width of the electric pole entity.
