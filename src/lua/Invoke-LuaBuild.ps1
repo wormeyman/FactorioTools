@@ -9,6 +9,13 @@ param (
 
 $All = $PsCmdlet.ParameterSetName -eq "AllSteps"
 
+# The CSharp.lua launcher targets net7.0, so running it needs the .NET 7 runtime. On a machine with only a
+# newer runtime installed (e.g. the .NET 10 SDK this repo pins), the exact net7.0 runtime is absent and the
+# launcher fails with "You must install or update .NET to run this application". Rolling forward across the
+# major boundary lets the net7.0 launcher run on whatever newer runtime is present; it's a no-op when the
+# net7.0 runtime is installed.
+$env:DOTNET_ROLL_FORWARD = "Major"
+
 $repoDir = Resolve-Path (Join-Path $PSScriptRoot "../..")
 $compilerDir = Join-Path $repoDir "submodules/CSharp.lua/CSharp.lua.Launcher"
 $baseOutputDir = Join-Path $repoDir "src/lua"
