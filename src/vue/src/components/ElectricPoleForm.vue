@@ -189,7 +189,7 @@ export default {
           this.electricPoleHeight = 2
           this.electricPoleSupplyWidth = 4
           this.electricPoleSupplyHeight = 4
-          this.electricPoleWireReach = 30
+          this.electricPoleWireReach = 32
           return true
         case "substation":
           this.electricPoleWidth = 2

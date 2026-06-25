@@ -62,7 +62,7 @@ public class OilFieldOptions
                 ElectricPoleEntityName = EntityNames.Vanilla.BigElectricPole,
                 ElectricPoleSupplyWidth = 4,
                 ElectricPoleSupplyHeight = 4,
-                ElectricPoleWireReach = 30,
+                ElectricPoleWireReach = 32,
                 ElectricPoleWidth = 2,
                 ElectricPoleHeight = 2,
             };

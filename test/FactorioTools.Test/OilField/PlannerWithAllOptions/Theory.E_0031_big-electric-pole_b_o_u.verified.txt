@@ -24,8 +24,8 @@ S CC-FLUTE -> FBE* (effects: 69, beacons: 60, pipes: 32)
 . . . . . . . . . . . . . . . j J j . . . . . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . b b b . . j j j . . b b b . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . b B b E e ^ . . E e b B b . . . . . . . . . . . . . . . . . . 
-. . . . . . . . . . b b b e e . . . e e b b b . . . . . . . . E e . . . . . . . . 
-. . . . . . . . . . b b b b b b . b b b b b b . . . . . . . . e e . . . . . . . . 
+. . . . . . . . . . b b b e e . . . e e b b b . . . . . . . . . E e . . . . . . . 
+. . . . . . . . . . b b b b b b . b b b b b b . . . . . . . . . e e . . . . . . . 
 . . . . . . . . . . b B b b B b . b B b b B b b b b b b b b b b b b b . . . . . . 
 . . . . . . . . . . b b b b b b . b b b b b b b B b b B b b B b b B b . . . . . . 
 . . . . . . . . . . . . . . . . . . . . . . . b b b b b b b b b b b b . . . . . . 
@@ -47,9 +47,9 @@ b b b . . j j j . . b b b b B b . o + o o e e e e b b b b b b . . j j j . . b b 
 b B b E e . . . E e b B b b b b . b b b o j j j . b B b b B b E e . . . E e b B b 
 b b b e e . . . e e b b b b b b . b B b o j J j . b b b b b b e e . . . e e b b b 
 b b b b b b . b b b b b b b B b . b b b + j j j . b b b b b b b b b . b b b b b b 
-b B b b B b . b B b b B b b b b . . . E e . . E e b B b b B b b B b . b B b b B b 
-b b b b b b . b b b b b b . E e . . . e e . . e e b b b b b b b b b . b b b b b b 
-. . . . . . . . . . . . . . e e b b b b b b . b b b b b b . . . . . . . . . . . . 
+b B b b B b . b B b b B b b b b E e . E e . . E e b B b b B b b B b . b B b b B b 
+b b b b b b . b b b b b b . . . e e . e e . . e e b b b b b b b b b . b b b b b b 
+. . . . . . . . . . . . . . . . b b b b b b . b b b b b b . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . b B b b B b . b B b b B b . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . b b b b b b . b b b b b b . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . . . . . . . . . E e . . . . . . . . . . . . 

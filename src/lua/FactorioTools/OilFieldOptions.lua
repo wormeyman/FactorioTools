@@ -66,7 +66,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       default.ElectricPoleEntityName = "big-electric-pole" --[[Vanilla.BigElectricPole]]
       default.ElectricPoleSupplyWidth = 4
       default.ElectricPoleSupplyHeight = 4
-      setElectricPoleWireReach(default, 30)
+      setElectricPoleWireReach(default, 32)
       default.ElectricPoleWidth = 2
       default.ElectricPoleHeight = 2
       return default
