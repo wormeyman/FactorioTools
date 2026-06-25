@@ -160,9 +160,13 @@ Expose the five qualities on the `oil-field` command(s) that build options, as f
 
 The enum, the string mapping, and the pole formula are plain arithmetic and string handling - Lua
 safe (no LINQ, `yield return`, try/catch, or struct dictionary keys). Regenerate `src/lua` via
-`Invoke-LuaBuild.ps1` and syntax-check with `luac5.2`. The transpiled output (used by the Factorio
-mod) emits quality too. The `pump` mod (`pump_2.2.0/`) is prior art for quality handling in a
-Factorio-mod context and can be consulted, but it is not a source of icons or formulas.
+`Invoke-LuaBuild.ps1` and syntax-check with `luac5.2`. Note `Invoke-LuaBuild.ps1` transpiles only the
+core (`src/FactorioTools`), not `src/FactorioTools.Serialization`, so the transpiled output carries the
+planning-side quality (the `Quality` enum, the quality options, and the electric-pole scaling) but not
+the blueprint-string emission of entity/module quality - the Factorio mod places entities through
+native runtime APIs rather than `GridToBlueprintString`, so that split is expected. The `pump` mod
+(`pump_2.2.0/`) is prior art for quality handling in a Factorio-mod context and can be consulted, but
+it is not a source of icons or formulas.
 
 ## Testing
 
