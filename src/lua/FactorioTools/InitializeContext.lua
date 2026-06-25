@@ -73,7 +73,6 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       extern.Signal = ref
       default.Icons = ArrayIcon(1, { extern })
       default.Item = "blueprint" --[[Vanilla.Blueprint]]
-      default.Version = 1
       local blueprint = default
 
       return Execute1(options, blueprint, System.Array.Empty(KnapcodeOilField.AvoidLocation), width, height)
@@ -115,7 +114,15 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       default.LocationToTerminals = locationToTerminals
       default.LocationToAdjacentCount = GetLocationToAdjacentCount(grid)
       default.SharedInstances = KnapcodeOilField.SharedInstances(grid)
-      return default
+      local context = default
+
+      local poleLevel = options.ElectricPoleQuality
+      context.ElectricPoleSupplyWidthWithQuality = options.ElectricPoleSupplyWidth + 2 * poleLevel
+      context.ElectricPoleSupplyHeightWithQuality = options.ElectricPoleSupplyHeight + 2 * poleLevel
+      context.ElectricPoleWireReachWithQuality = options:getElectricPoleWireReach() + 2 * poleLevel
+      context.ElectricPoleWireReachSquaredWithQuality = context.ElectricPoleWireReachWithQuality * context.ElectricPoleWireReachWithQuality
+
+      return context
     end
     PopulateCenters = function (centerAndOriginalDirections, centers)
       for i = 0, #centerAndOriginalDirections - 1 do

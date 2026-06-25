@@ -48,7 +48,6 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       extern.Signal = ref
       default.Icons = ArrayIcon(1, { extern })
       default.Item = "blueprint" --[[Vanilla.Blueprint]]
-      default.Version = 0
       return default
     end
     return {

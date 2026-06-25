@@ -35,7 +35,8 @@ System.import(function (out)
 end)
 System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
   namespace.class("AddPipes", function (namespace)
-    local Execute, GetBestSolution, GetAllPlans, GetSolutionGroups, OptimizeAndAddSolutions, GetSolution, EliminateStrandedTerminals, class
+    local Execute, SelectBestSolution, ChooseDropCandidate, IsBefore, DropPumpjack, GetBestSolution, GetAllPlans, GetSolutionGroups, 
+    OptimizeAndAddSolutions, GetSolution, EliminateStrandedTerminals, class
     namespace.class("SolutionInfo", function (namespace)
       local __members__, __ctor__
       __ctor__ = function (this, SelectedPlans, AltnernatePlans, UnusedPlans, BestSolution, BestBeacons)
@@ -82,7 +83,8 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
     end)
     namespace.class("Solution", function (namespace)
       return {
-        PipeCountWithoutUnderground = 0
+        PipeCountWithoutUnderground = 0,
+        HeatFeasible = false
       }
     end)
     namespace.class("LocationSetComparer", function (namespace)
@@ -294,13 +296,9 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       local bestSolution
       local bestBeacons
 
-      local result = GetBestSolution(context)
-      if System.is(result.Exception, KnapcodeFactorioTools.NoPathBetweenTerminalsException) and not eliminateStrandedTerminals then
-        EliminateStrandedTerminals(context)
-        result = GetBestSolution(context)
-        if result.Exception ~= nil then
-          System.throw(result.Exception)
-        end
+      local result = SelectBestSolution(context, eliminateStrandedTerminals)
+      if result.Exception ~= nil then
+        System.throw(result.Exception)
       end
 
       selectedPlans, alternatePlans, unusedPlans, bestSolution, bestBeacons = result.Data:Deconstruct()
@@ -310,12 +308,154 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
 
       KnapcodeOilField.AddPipeEntities.Execute(context, bestSolution.Pipes, bestSolution.UndergroundPipes)
 
+      -- Place the heat network before beacons so it claims the contested tiles next to pipes/pumpjacks. The beacons
+      -- for this solution were already planned to avoid these tiles (see GetSolution). AddHeatPipes.Execute will then
+      -- be a no-op in the Planner because context.HeatPipes is set.
+      if bestSolution.HeatPipes ~= nil then
+        for _, location in System.each(bestSolution.HeatPipes:EnumerateItems()) do
+          context.Grid:AddEntity(location, KnapcodeOilField.HeatPipe(context.Grid:GetId()))
+        end
+
+        context.HeatPipes = bestSolution.HeatPipes
+      end
+
       if bestBeacons ~= nil then
         -- Visualizer.Show(context.Grid, bestSolution.Beacons.Select(c => (DelaunatorSharp.IPoint)new DelaunatorSharp.Point(c.X, c.Y)), Array.Empty<DelaunatorSharp.IEdge>());
         KnapcodeOilField.Helpers.AddBeaconsToGrid(context.Grid, context.Options, bestBeacons.Beacons)
+
+        -- On Aquilo, extend the heat network to reach the placed beacons, then drop any beacon that still cannot be
+        -- heated (an unheated beacon freezes and gives no effects). Selection already ran on the pre-drop effect
+        -- counts (fast path); update the reported counts so the summary matches the blueprint.
+        if context.Options.AddHeatPipes and context.HeatPipes ~= nil then
+          local heatedBeacons = KnapcodeOilField.AddHeatPipes.ExtendToBeacons(context, bestBeacons.Beacons)
+
+          local keptEffects = 0
+          local keptCount = 0
+          for i = 0, #bestBeacons.Beacons - 1 do
+            local center = bestBeacons.Beacons:get(i)
+            if heatedBeacons:Contains(center) then
+              keptEffects = keptEffects + bestBeacons.EffectsGivenCounts:get(i)
+              keptCount = keptCount + 1
+            else
+              KnapcodeOilField.Helpers.RemoveEntity(context.Grid, center, context.Options.BeaconWidth, context.Options.BeaconHeight)
+            end
+          end
+
+          if #selectedPlans > 0 then
+            local default = selectedPlans:get(0):__clone__()
+            default.BeaconEffectCount = keptEffects
+            default.BeaconCount = keptCount
+            selectedPlans:set(0, default)
+          end
+        end
       end
 
       return System.ValueTuple(selectedPlans, alternatePlans, unusedPlans)
+    end
+    SelectBestSolution = function (context, eliminateStrandedTerminals)
+      -- The full pumpjack set's planning maps; the drop loop mutates these in place so each replan
+      -- (which clones context.CenterToTerminals at the start of GetSolutionGroups) sees the reduced set.
+      local centerToTerminals = context.CenterToTerminals
+      local locationToTerminals = context.LocationToTerminals
+
+      while true do
+        context.CenterToTerminals = centerToTerminals
+        context.LocationToTerminals = locationToTerminals
+
+        local result = GetBestSolution(context)
+        if System.is(result.Exception, KnapcodeFactorioTools.NoPathBetweenTerminalsException) and not eliminateStrandedTerminals then
+          EliminateStrandedTerminals(context)
+          result = GetBestSolution(context)
+        end
+
+        if result.Exception ~= nil then
+          return result
+        end
+
+        local best = result.Data.BestSolution
+        if not context.Options.AddHeatPipes or best.UncoveredPipes:getCount() + best.UncoveredCenters:getCount() == 0 then
+          return result
+        end
+
+        local dropCenter = ChooseDropCandidate(context, best)
+        if not dropCenter.IsValid then
+          -- Nothing left to drop (e.g. the last pumpjack is boxed by avoid entities). Accept the residual;
+          -- it is reported on the summary and surfaced as a UI warning.
+          return result
+        end
+
+        DropPumpjack(context, centerToTerminals, locationToTerminals, dropCenter)
+        local default = context
+        default.HeatDroppedPumpjacks = default.HeatDroppedPumpjacks + 1
+      end
+    end
+    ChooseDropCandidate = function (context, best)
+      if best.UncoveredCenters:getCount() > 0 then
+        local chosenCenter = KnapcodeOilField.Location.getInvalid()
+        for _, center in System.each(best.UncoveredCenters:EnumerateItems()) do
+          if IsBefore(center, chosenCenter) then
+            chosenCenter = center
+          end
+        end
+
+        return chosenCenter
+      end
+
+      if best.UncoveredPipes:getCount() == 0 then
+        return KnapcodeOilField.Location.getInvalid()
+      end
+
+      local chosen = KnapcodeOilField.Location.getInvalid()
+      local chosenDistance = 2147483647 --[[Int32.MaxValue]]
+      for i = 0, #context.Centers - 1 do
+        local center = context.Centers:get(i)
+        local distance = 2147483647 --[[Int32.MaxValue]]
+        for _, pipe in System.each(best.UncoveredPipes:EnumerateItems()) do
+          local d = math.Abs(center.X - pipe.X) + math.Abs(center.Y - pipe.Y)
+          if d < distance then
+            distance = d
+          end
+        end
+
+        if distance < chosenDistance or (distance == chosenDistance and IsBefore(center, chosen)) then
+          chosenDistance = distance
+          chosen = center
+        end
+      end
+
+      return chosen
+    end
+    IsBefore = function (a, b)
+      if not b.IsValid then
+        return true
+      end
+
+      if a.Y ~= b.Y then
+        return a.Y < b.Y
+      end
+
+      return a.X < b.X
+    end
+    DropPumpjack = function (context, centerToTerminals, locationToTerminals, center)
+      local default, terminals = centerToTerminals:TryGetValue(center)
+      if default then
+        for i = 0, #terminals - 1 do
+          local terminal = terminals:get(i)
+          local extern, atLocation = locationToTerminals:TryGetValue(terminal.Terminal)
+          if extern then
+            atLocation:Remove(terminal)
+            if #atLocation == 0 then
+              locationToTerminals:Remove(terminal.Terminal)
+            end
+          end
+        end
+
+        centerToTerminals:Remove(center)
+      end
+
+      context.Centers:Remove(center)
+      context.CenterToOriginalDirection:Remove(center)
+      KnapcodeOilField.Helpers.RemovePumpjack(context.Grid, center)
     end
     GetBestSolution = function (context)
       local result = GetAllPlans(context)
@@ -325,6 +465,16 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
 
       local sortedPlans = result.Data
       sortedPlans:Sort(function (a, b)
+        -- When heat is on it is the hard constraint: fewer unheated targets = better, ahead of everything else.
+        if context.Options.AddHeatPipes then
+          local aUnheated = a.Pipes.UncoveredPipes:getCount() + a.Pipes.UncoveredCenters:getCount()
+          local bUnheated = b.Pipes.UncoveredPipes:getCount() + b.Pipes.UncoveredCenters:getCount()
+          local heat = System.Int32.CompareTo(aUnheated, bUnheated)
+          if heat ~= 0 then
+            return heat
+          end
+        end
+
         -- more effects = better
         local c = System.Int32.CompareTo(b.Plan.BeaconEffectCount, a.Plan.BeaconEffectCount)
         if c ~= 0 then
@@ -419,6 +569,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       end
 
       local solutionGroups = result.Data
+
       local plans = ListPlanInfo()
       for _, default in System.each(solutionGroups) do
         local solutionGroup, groupNumber = default:Deconstruct()
@@ -631,9 +782,25 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
         undergroundPipes = KnapcodeOilField.PlanUndergroundPipes.Execute(context, optimizedPipes)
       end
 
+      -- On Aquilo (heat pipes enabled) route the heat network for this layout up front so plan selection can rank by
+      -- heat coverage - heat is the hard constraint. Routing per layout matters because the fewest-pipe layout is not
+      -- always heatable, while another strategy's layout often is. When beacons are also on, routing heat first lets
+      -- it claim the contested tiles next to pipes/pumpjacks and beacons route around it (best-effort, possibly
+      -- reduced). Layouts that cannot be fully heated are still kept but ranked last so a heatable one is preferred.
+      local heatPipes = nil
+      local uncoveredPipes = KnapcodeOilField.EmptyLocationSet.Instance
+      local uncoveredCenters = KnapcodeOilField.EmptyLocationSet.Instance
+      local heatFeasible = true
+      if context.Options.AddHeatPipes then
+        local default
+        default, uncoveredPipes, uncoveredCenters = KnapcodeOilField.AddHeatPipes.Route(context, optimizedPipes)
+        heatPipes = default
+        heatFeasible = uncoveredPipes:getCount() == 0 and uncoveredCenters:getCount() == 0
+      end
+
       local beaconSolutions = nil
-      if context.Options.AddBeacons then
-        beaconSolutions = KnapcodeOilField.PlanBeacons.Execute(context, optimizedPipes)
+      if context.Options.AddBeacons and heatFeasible then
+        beaconSolutions = KnapcodeOilField.PlanBeacons.Execute(context, optimizedPipes, heatPipes)
       end
 
       KnapcodeOilField.Validate.NoOverlappingEntities(context, optimizedPipes, undergroundPipes, beaconSolutions)
@@ -654,6 +821,10 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       default.Pipes = optimizedPipes
       default.UndergroundPipes = undergroundPipes
       default.BeaconSolutions = beaconSolutions
+      default.HeatPipes = heatPipes
+      default.HeatFeasible = heatFeasible
+      default.UncoveredPipes = uncoveredPipes
+      default.UncoveredCenters = uncoveredCenters
       return default
     end
     EliminateStrandedTerminals = function (context)

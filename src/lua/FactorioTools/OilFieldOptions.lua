@@ -99,6 +99,8 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       OptimizePipes = true,
       OverlapBeacons = true,
       AddElectricPoles = true,
+      AddHeatPipes = false,
+      HeatPipeEntityName = "heat-pipe" --[[Vanilla.HeatPipe]],
       ElectricPoleEntityName = "medium-electric-pole" --[[Vanilla.MediumElectricPole]],
       ElectricPoleSupplyWidth = 7,
       ElectricPoleSupplyHeight = 7,
@@ -114,6 +116,11 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       BeaconWidth = 3,
       BeaconHeight = 3,
       ValidateSolution = false,
+      PumpjackQuality = 0 --[[Quality.Normal]],
+      BeaconQuality = 0 --[[Quality.Normal]],
+      ElectricPoleQuality = 0 --[[Quality.Normal]],
+      PumpjackModuleQuality = 0 --[[Quality.Normal]],
+      BeaconModuleQuality = 0 --[[Quality.Normal]],
       static = static,
       __ctor__ = __ctor__
     }

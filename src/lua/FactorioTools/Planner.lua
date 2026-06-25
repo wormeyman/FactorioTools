@@ -35,7 +35,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
   end)
 
   namespace.class("Planner", function (namespace)
-    local ExecuteSample, Execute, Execute1, Execute2, GetElectricPolesAvoid
+    local ExecuteSample, GetSampleBlueprint, Execute, Execute1, Execute2, GetElectricPolesAvoid
     ExecuteSample = function ()
       local options = KnapcodeOilField.OilFieldOptions.getForMediumElectricPole()
 
@@ -43,6 +43,9 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       options.BeaconStrategies = KnapcodeFactorioTools.CollectionExtensions.ToList(KnapcodeOilField.OilFieldOptions.AllBeaconStrategies, System.Int32)
       options.ValidateSolution = true
 
+      return Execute(options, GetSampleBlueprint())
+    end
+    GetSampleBlueprint = function ()
       local default = KnapcodeFactorioToolsData.Blueprint()
       local extern = KnapcodeFactorioToolsData.Entity()
       extern.EntityNumber = 1
@@ -84,10 +87,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       case.Signal = void
       default.Icons = ArrayIcon(1, { case })
       default.Item = "blueprint" --[[Vanilla.Blueprint]]
-      default.Version = 0
-      local inputBlueprint = default
-
-      return Execute(options, inputBlueprint)
+      return default
     end
     Execute = function (options, inputBlueprint)
       return Execute1(options, inputBlueprint, System.Array.Empty(KnapcodeOilField.AvoidLocation))
@@ -155,6 +155,11 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
 
       -- Visualizer.Show(context.Grid, Array.Empty<DelaunatorSharp.IPoint>(), Array.Empty<DelaunatorSharp.IEdge>());
 
+      -- Heat pipes have a hard constraint (they must be orthogonally adjacent to every pumpjack and pipe), while
+      -- electric poles are flexible (they only need to be within supply range). Route heat pipes first so they claim
+      -- the contested tiles next to pipes/pumpjacks, then let electric poles place around them.
+      KnapcodeOilField.AddHeatPipes.Execute(context)
+
       if options.AddElectricPoles then
         if not addElectricPolesFirst or context.Options.AddBeacons then
           poles = KnapcodeOilField.AddElectricPoles.Execute(context, KnapcodeOilField.EmptyLocationSet.Instance, addElectricPolesFirst)
@@ -173,7 +178,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
         KnapcodeOilField.Validate.AllEntitiesHavePower(context)
       end
 
-      local missingPumpjacks = initialPumpjackCount - context.CenterToTerminals:getCount()
+      local missingPumpjacks = initialPumpjackCount - context.CenterToTerminals:getCount() - context.HeatDroppedPumpjacks
       if missingPumpjacks > 0 then
         System.throw(KnapcodeFactorioTools.FactorioToolsException("The initial number of pumpjacks does not match the final pumpjack count."))
       end
@@ -197,7 +202,11 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
         end
       end
 
-      local planSummary = KnapcodeOilField.OilFieldPlanSummary(missingPumpjacks, rotatedPumpjacks, selectedPlans, alternatePlans, unusedPlans)
+      local unheatedPumpjacks, unheatedPipes = KnapcodeOilField.Validate.CountUnheatedTargets(context)
+      KnapcodeOilField.Validate.HeatPipesAreConnected(context)
+      KnapcodeOilField.Validate.NoUnheatedBeacons(context)
+
+      local planSummary = KnapcodeOilField.OilFieldPlanSummary(missingPumpjacks, rotatedPumpjacks, context.HeatDroppedPumpjacks, unheatedPumpjacks, unheatedPipes, selectedPlans, alternatePlans, unusedPlans)
 
       return KnapcodeOilField.PlannerResult(context, planSummary)
     end
@@ -213,6 +222,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
     end
     return {
       ExecuteSample = ExecuteSample,
+      GetSampleBlueprint = GetSampleBlueprint,
       Execute = Execute,
       Execute1 = Execute1
     }
