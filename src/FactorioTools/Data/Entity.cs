@@ -23,6 +23,9 @@ public class Entity
     [JsonPropertyName("items")]
     public object? Items { get; set; }
 
+    [JsonPropertyName("quality")]
+    public string? Quality { get; set; }
+
     [JsonPropertyName("neighbours")]
     public int[]? Neighbours { get; set; }
 }

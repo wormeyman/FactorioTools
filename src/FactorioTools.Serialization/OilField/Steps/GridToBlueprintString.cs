@@ -30,22 +30,23 @@ public static class GridToBlueprintString
 
     /// <summary>
     /// Converts an internal <see cref="Direction"/> (1.1-style 8-way values: N=0, E=2, S=4, W=6) to the value emitted in
-    /// the output blueprint. Factorio 2.0 uses 16-way directions (N=0, E=4, S=8, W=12), so heat (2.0) mode doubles them.
+    /// the output blueprint. Factorio 2.0 uses 16-way directions (N=0, E=4, S=8, W=12); always emit 2.0 directions.
     /// </summary>
     private static Direction ToOutputDirection(Context context, Direction direction)
     {
-        if (context.Options.AddHeatPipes)
-        {
-            return (Direction)((int)direction * 2);
-        }
-
-        return direction;
+        // Factorio 2.0 uses 16-way directions (N=0, E=4, S=8, W=12); internal directions are 1.1-style 8-way.
+        return (Direction)((int)direction * 2);
     }
 
     // defines.inventory.mining_drill_modules and defines.inventory.beacon_modules in Factorio 2.0, used to target the
     // module inventory in the 2.0 "items" array form (confirmed against a real 2.0 export).
     private const int MiningDrillModuleInventory = 2;
     private const int BeaconModuleInventory = 1;
+
+    private static string? ToOutputQuality(Quality quality)
+    {
+        return quality == Quality.Normal ? null : Qualities.ToBlueprintString(quality);
+    }
 
     /// <summary>
     /// Produces the value for an entity's "items" field. In 1.1 mode this is the module name-to-count dictionary; in
@@ -112,6 +113,7 @@ public static class GridToBlueprintString
                         Name = EntityNames.Vanilla.Pumpjack,
                         Position = position,
                         Items = ToOutputItems(context, context.Options.PumpjackModules, MiningDrillModuleInventory),
+                        Quality = ToOutputQuality(context.Options.PumpjackQuality),
                     });
                     break;
                 case PumpjackSide:
@@ -158,6 +160,7 @@ public static class GridToBlueprintString
                         EntityNumber = GetEntityNumber(electricPole),
                         Name = context.Options.ElectricPoleEntityName,
                         Position = position,
+                        Quality = ToOutputQuality(context.Options.ElectricPoleQuality),
                         Neighbours = electricPole
                             .Neighbors
                             .Select(id => context.Grid[context.Grid.EntityIdToLocation[id]]!)
@@ -185,6 +188,7 @@ public static class GridToBlueprintString
                         Name = context.Options.BeaconEntityName,
                         Position = position,
                         Items = ToOutputItems(context, context.Options.BeaconModules, BeaconModuleInventory),
+                        Quality = ToOutputQuality(context.Options.BeaconQuality),
                     });
                     break;
                 case AvoidEntity:
@@ -220,9 +224,7 @@ public static class GridToBlueprintString
                     }
                 }
             },
-            // Heat pipes / the Aquilo freezing mechanic are a Factorio 2.0 (Space Age) feature, so emit a 2.0 version
-            // string in heat mode. Otherwise keep the established 1.1 version for unchanged output.
-            Version = context.Options.AddHeatPipes ? FormatVersion(2, 0, 32, 0) : FormatVersion(1, 1, 101, 1),
+            Version = FormatVersion(2, 0, 32, 0),
             Item = ItemNames.Vanilla.Blueprint,
             Entities = entities.ToArray(),
         };
