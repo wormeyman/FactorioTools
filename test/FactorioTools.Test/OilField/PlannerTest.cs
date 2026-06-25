@@ -53,6 +53,27 @@ public class PlannerTest : BasePlannerTest
     }
 
     [Fact]
+    public void LegendaryElectricPolesReduceOrMatchPoleCount()
+    {
+        var blueprintString = SmallListBlueprintStrings[0];
+
+        var normal = OilFieldOptions.ForMediumElectricPole;
+        normal.ValidateSolution = true;
+        var (normalContext, _) = Planner.Execute(normal, ParseBlueprint.Execute(blueprintString));
+        var normalPoles = normalContext.Grid.GetEntities().OfType<ElectricPoleCenter>().Count();
+
+        var legendary = OilFieldOptions.ForMediumElectricPole;
+        legendary.ValidateSolution = true;
+        legendary.ElectricPoleQuality = Quality.Legendary;
+        var (legendaryContext, _) = Planner.Execute(legendary, ParseBlueprint.Execute(blueprintString));
+        var legendaryPoles = legendaryContext.Grid.GetEntities().OfType<ElectricPoleCenter>().Count();
+
+        Assert.True(
+            legendaryPoles <= normalPoles,
+            $"legendary used {legendaryPoles} poles vs normal {normalPoles}");
+    }
+
+    [Fact]
     public void AllowsElectricPolesToNotBePlanned()
     {
         // Arrange

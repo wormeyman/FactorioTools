@@ -68,7 +68,7 @@ public static class InitializeContext
         PopulateCenterToTerminals(centerToTerminals, grid, centers);
         PopulateLocationToTerminals(locationToTerminals, centerToTerminals);
 
-        return new Context
+        var context = new Context
         {
             Options = options,
             InputBlueprint = blueprint,
@@ -82,6 +82,15 @@ public static class InitializeContext
             LocationToAdjacentCount = GetLocationToAdjacentCount(grid),
             SharedInstances = new SharedInstances(grid),
         };
+
+        var poleLevel = (int)options.ElectricPoleQuality;
+        context.ElectricPoleSupplyWidthWithQuality = options.ElectricPoleSupplyWidth + 2 * poleLevel;
+        context.ElectricPoleSupplyHeightWithQuality = options.ElectricPoleSupplyHeight + 2 * poleLevel;
+        context.ElectricPoleWireReachWithQuality = options.ElectricPoleWireReach + 2 * poleLevel;
+        context.ElectricPoleWireReachSquaredWithQuality =
+            context.ElectricPoleWireReachWithQuality * context.ElectricPoleWireReachWithQuality;
+
+        return context;
     }
 
     private static void PopulateCenters(List<Tuple<Location, Direction>> centerAndOriginalDirections, List<Location> centers)

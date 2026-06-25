@@ -251,6 +251,33 @@ public class InitializeContextTest : BasePlannerTest
         Assert.Equal(new Location(28, 20), context.Centers[1]);
     }
 
+    [Theory]
+    // medium pole base 7x7 / 9; substation base 18x18 / 18. effective = base + 2*level.
+    [InlineData(7, 9, Quality.Normal, 7, 9.0)]
+    [InlineData(7, 9, Quality.Uncommon, 9, 11.0)]
+    [InlineData(7, 9, Quality.Rare, 11, 13.0)]
+    [InlineData(7, 9, Quality.Epic, 13, 15.0)]
+    [InlineData(7, 9, Quality.Legendary, 17, 19.0)]
+    [InlineData(18, 18, Quality.Legendary, 28, 28.0)]
+    public void ElectricPoleQualityScalesSupplyAndReach(
+        int baseSupply, double baseReach, Quality quality, int expectedSupply, double expectedReach)
+    {
+        var options = new OilFieldOptions
+        {
+            ElectricPoleSupplyWidth = baseSupply,
+            ElectricPoleSupplyHeight = baseSupply,
+            ElectricPoleWireReach = baseReach,
+            ElectricPoleQuality = quality,
+        };
+
+        var context = InitializeContext.GetEmpty(options, width: 10, height: 10);
+
+        Assert.Equal(expectedSupply, context.ElectricPoleSupplyWidthWithQuality);
+        Assert.Equal(expectedSupply, context.ElectricPoleSupplyHeightWithQuality);
+        Assert.Equal(expectedReach, context.ElectricPoleWireReachWithQuality);
+        Assert.Equal(expectedReach * expectedReach, context.ElectricPoleWireReachSquaredWithQuality);
+    }
+
     public AvoidLocation[] NoAvoid { get; }
     public OilFieldOptions SmallPowerNoBeacon { get; }
     public OilFieldOptions BigPowerNoBeacon { get; }
