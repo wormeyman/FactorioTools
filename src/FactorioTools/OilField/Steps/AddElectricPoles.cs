@@ -182,16 +182,16 @@ public static class AddElectricPoles
                 continue;
             }
 
-            if (AreElectricPolesConnected(center, other, context.Options))
+            if (AreElectricPolesConnected(center, other, context))
             {
                 centerEntity.AddNeighbor(otherCenter);
             }
         }
     }
 
-    public static bool AreElectricPolesConnected(Location a, Location b, OilFieldOptions options)
+    public static bool AreElectricPolesConnected(Location a, Location b, Context context)
     {
-        return GetElectricPoleDistanceSquared(a, b, options) <= options.ElectricPoleWireReachSquared;
+        return GetElectricPoleDistanceSquared(a, b, context.Options) <= context.ElectricPoleWireReachSquaredWithQuality;
     }
 
     private static int GetElectricPoleDistanceSquared(Location a, Location b, OilFieldOptions options)
@@ -370,7 +370,7 @@ public static class AddElectricPoles
 
         allSubsets.Enqueue(coveredCountBatches);
 
-        var roundedReach = (int)Math.Ceiling(context.Options.ElectricPoleWireReach);
+        var roundedReach = (int)Math.Ceiling(context.ElectricPoleWireReachWithQuality);
         ILocationDictionary<ElectricPoleCandidateInfo>? candidateToInfo = null;
 
         while (coveredEntities.Any(false))
@@ -490,7 +490,7 @@ public static class AddElectricPoles
             var min = int.MaxValue;
             for (var i = 0; i < electricPoleList.Count; i++)
             {
-                if (AreElectricPolesConnected(candidate, electricPoleList[i], context.Options))
+                if (AreElectricPolesConnected(candidate, electricPoleList[i], context))
                 {
                     othersConnected++;
                 }
@@ -585,7 +585,7 @@ public static class AddElectricPoles
 
                 if (candidateToInfo.TryGetValue(other, out var info))
                 {
-                    if (distanceSquared <= context.Options.ElectricPoleWireReachSquared)
+                    if (distanceSquared <= context.ElectricPoleWireReachSquaredWithQuality)
                     {
                         info.OthersConnected++;
                     }
@@ -640,7 +640,7 @@ public static class AddElectricPoles
                 }
 
                 var distanceSquared = GetElectricPoleDistanceSquared(endpoint.A, endpoint.B, context.Options);
-                if (distanceSquared <= context.Options.ElectricPoleWireReachSquared)
+                if (distanceSquared <= context.ElectricPoleWireReachSquaredWithQuality)
                 {
                     continue;
                 }
@@ -664,10 +664,10 @@ public static class AddElectricPoles
 
     private static void AddSinglePoleForConnection(Context context, ILocationDictionary<ElectricPoleCenter> electricPoles, List<ILocationSet> groups, double distance, Endpoints endpoints)
     {
-        var segments = (int)Math.Ceiling(distance / context.Options.ElectricPoleWireReach);
+        var segments = (int)Math.Ceiling(distance / context.ElectricPoleWireReachWithQuality);
         var idealLine = BresenhamsLine.GetPath(endpoints.A, endpoints.B);
         var idealIndex = idealLine.Count / segments;
-        if (!AreElectricPolesConnected(idealLine[0], idealLine[idealIndex], context.Options))
+        if (!AreElectricPolesConnected(idealLine[0], idealLine[idealIndex], context))
         {
             idealIndex--;
         }
@@ -713,7 +713,7 @@ public static class AddElectricPoles
                 for (var i = 0; i < neighbors.Length; i++)
                 {
                     if (neighbors[i].IsValid
-                        && AreElectricPolesConnected(idealLine[0], neighbors[i], context.Options)
+                        && AreElectricPolesConnected(idealLine[0], neighbors[i], context)
                         && attempted.Add(neighbors[i]))
                     {
                         candidates.Enqueue(neighbors[i]);

@@ -3,13 +3,14 @@ local System = System
 System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
   namespace.class("BeaconSolution", function (namespace)
     local __members__, __ctor__
-    __ctor__ = function (this, Strategy, Beacons, Effects)
+    __ctor__ = function (this, Strategy, Beacons, Effects, EffectsGivenCounts)
       this.Strategy = Strategy
       this.Beacons = Beacons
       this.Effects = Effects
+      this.EffectsGivenCounts = EffectsGivenCounts
     end
     __members__ = function ()
-      return "BeaconSolution", "Strategy", "Beacons", "Effects"
+      return "BeaconSolution", "Strategy", "Beacons", "Effects", "EffectsGivenCounts"
     end
     return {
       Strategy = 0,

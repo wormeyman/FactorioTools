@@ -26,6 +26,18 @@
       <option value="big-electric-pole">Big electric pole</option>
       <option value="substation">Substation</option>
     </CustomizeSelect>
+    <QualitySelect
+      v-if="addElectricPoles"
+      label="Electric pole quality"
+      idPrefix="electric-pole"
+      :showAdvancedOptions="showAdvancedOptions"
+      v-model="electricPoleQuality"
+    />
+    <p class="form-text" v-show="showAdvancedOptions && addElectricPoles">
+      Effective coverage at {{ electricPoleQuality }}:
+      supply {{ Number(electricPoleSupplyWidth) + 2 * level }}x{{ Number(electricPoleSupplyHeight) + 2 * level }},
+      wire reach {{ Number(electricPoleWireReach) + 2 * level }}
+    </p>
     <div class="row" v-show="showAdvancedOptions && addElectricPoles">
       <div class="col-lg-4 mt-3">
         <label class="form-label" for="electric-pole-wire-reach">Wire reach</label>
@@ -108,7 +120,10 @@
 import { storeToRefs } from "pinia"
 import { pick } from "../lib/helpers"
 import { getDefaults, useOilFieldStore } from "../stores/OilFieldStore"
+import { Quality } from "../lib/FactorioToolsApi"
+import { qualityLevel } from "../lib/quality"
 import CustomizeSelect from "./CustomizeSelect.vue"
+import QualitySelect from "./QualitySelect.vue"
 
 export default {
   props: {
@@ -128,7 +143,13 @@ export default {
       "electricPoleSupplyWidth",
       "electricPoleSupplyHeight",
       "electricPoleWireReach",
+      "electricPoleQuality",
     )
+  },
+  computed: {
+    level(): number {
+      return qualityLevel(this.electricPoleQuality as Quality)
+    },
   },
   watch: {
     showAdvancedOptions: function (newVal: boolean) {
@@ -168,7 +189,7 @@ export default {
           this.electricPoleHeight = 2
           this.electricPoleSupplyWidth = 4
           this.electricPoleSupplyHeight = 4
-          this.electricPoleWireReach = 30
+          this.electricPoleWireReach = 32
           return true
         case "substation":
           this.electricPoleWidth = 2
@@ -182,6 +203,6 @@ export default {
       }
     },
   },
-  components: { CustomizeSelect },
+  components: { CustomizeSelect, QualitySelect },
 }
 </script>

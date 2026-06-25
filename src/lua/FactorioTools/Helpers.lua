@@ -20,11 +20,11 @@ System.import(function (out)
 end)
 System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
   namespace.class("Helpers", function (namespace)
-    local TerminalOffsets, AddPumpjack, GetCenterToTerminals, PopulateCenterToTerminals, GetLocationToTerminals, PopulateLocationToTerminals, GetBeaconCandidateToCovered, GetElectricPoleCandidateToCovered, 
-    GetCandidateToCovered, GetProviderCenterToCoveredCenters, GetCoveredCenterToProviderCenters, AddCoveredCenters, DoesProviderFit, GetEntityDistance, AddProviderAndPreventMultipleProviders, AddProviderAndAllowMultipleProviders, 
-    GetElectricPoleCoverage, GetPoweredEntities, GetCoveredToCandidates, GetProviderOverlapBounds, RemoveOverlappingCandidates, RemoveOverlappingCandidates1, RemoveOverlappingCandidates2, RemoveEntity, 
-    AddProviderToGrid, AddBeaconsToGrid, IsProviderInBounds, EliminateOtherTerminals, GetPath, AddPath, AreLocationsCollinear, CountTurns, 
-    MakeStraightLineOnEmpty, MakeStraightLine, PointsToLines, PointsToLines1, ToInt, static
+    local TerminalOffsets, AddPumpjack, RemovePumpjack, GetCenterToTerminals, PopulateCenterToTerminals, GetLocationToTerminals, PopulateLocationToTerminals, GetBeaconCandidateToCovered, 
+    GetElectricPoleCandidateToCovered, GetCandidateToCovered, GetProviderCenterToCoveredCenters, GetCoveredCenterToProviderCenters, AddCoveredCenters, DoesProviderFit, GetEntityDistance, AddProviderAndPreventMultipleProviders, 
+    AddProviderAndAllowMultipleProviders, GetElectricPoleCoverage, GetPoweredEntities, GetCoveredToCandidates, GetProviderOverlapBounds, RemoveOverlappingCandidates, RemoveOverlappingCandidates1, RemoveOverlappingCandidates2, 
+    RemoveEntity, AddProviderToGrid, AddBeaconsToGrid, IsProviderInBounds, EliminateOtherTerminals, GetPath, AddPath, AreLocationsCollinear, 
+    CountTurns, MakeStraightLineOnEmpty, MakeStraightLine, PointsToLines, PointsToLines1, ToInt, static
     static = function (this)
       local default = ListTuple()
       default:Add(System.Tuple(0 --[[Direction.Up]], KnapcodeOilField.Location(1, - 2)))
@@ -44,6 +44,13 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       end
 
       return centerEntity
+    end
+    RemovePumpjack = function (grid, center)
+      for x = - 1, 1 do
+        for y = - 1, 1 do
+          grid:RemoveEntity(KnapcodeOilField.Location(center.X + x, center.Y + y))
+        end
+      end
     end
     GetCenterToTerminals = function (context, grid, centers)
       local centerToTerminals = context:GetLocationDictionary(ListTerminalLocation)
@@ -92,7 +99,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       return GetCandidateToCovered(context, recipients, candidateFactory, context.Options.BeaconWidth, context.Options.BeaconHeight, context.Options.BeaconSupplyWidth, context.Options.BeaconSupplyHeight, removeUnused, true, false, KnapcodeOilField.BeaconCenter, TInfo)
     end
     GetElectricPoleCandidateToCovered = function (context, recipients, candidateFactory, removeUnused, TInfo)
-      return GetCandidateToCovered(context, recipients, candidateFactory, context.Options.ElectricPoleWidth, context.Options.ElectricPoleHeight, context.Options.ElectricPoleSupplyWidth, context.Options.ElectricPoleSupplyHeight, removeUnused, true, true, KnapcodeOilField.ElectricPoleCenter, TInfo)
+      return GetCandidateToCovered(context, recipients, candidateFactory, context.Options.ElectricPoleWidth, context.Options.ElectricPoleHeight, context.ElectricPoleSupplyWidthWithQuality, context.ElectricPoleSupplyHeightWithQuality, removeUnused, true, true, KnapcodeOilField.ElectricPoleCenter, TInfo)
     end
     GetCandidateToCovered = function (context, recipients, candidateFactory, providerWidth, providerHeight, supplyWidth, supplyHeight, removeUnused, includePumpjacks, includeBeacons, TProvider, TInfo)
       local candidateToInfo = context:GetLocationDictionary(TInfo)
@@ -505,7 +512,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       end
     end
     GetElectricPoleCoverage = function (context, poweredEntities, electricPoleCenters)
-      local poleCenterToCoveredCenters = GetProviderCenterToCoveredCenters(context, context.Options.ElectricPoleWidth, context.Options.ElectricPoleHeight, context.Options.ElectricPoleSupplyWidth, context.Options.ElectricPoleSupplyHeight, electricPoleCenters, true, true)
+      local poleCenterToCoveredCenters = GetProviderCenterToCoveredCenters(context, context.Options.ElectricPoleWidth, context.Options.ElectricPoleHeight, context.ElectricPoleSupplyWidthWithQuality, context.ElectricPoleSupplyHeightWithQuality, electricPoleCenters, true, true)
 
       local coveredCenterToPoleCenters = GetCoveredCenterToProviderCenters(context, poleCenterToCoveredCenters)
 
@@ -873,6 +880,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
     end
     return {
       AddPumpjack = AddPumpjack,
+      RemovePumpjack = RemovePumpjack,
       GetCenterToTerminals = GetCenterToTerminals,
       PopulateCenterToTerminals = PopulateCenterToTerminals,
       GetLocationToTerminals = GetLocationToTerminals,

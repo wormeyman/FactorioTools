@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { createPinia, setActivePinia } from "pinia"
 import { PipeStrategy } from "./FactorioToolsApi"
 import { useOilFieldStore } from "../stores/OilFieldStore"
-import { getPlanWithProgress, PlanProgress } from "./OilFieldPlanner"
+import { buildPlanRequest, getPlanWithProgress, PlanProgress } from "./OilFieldPlanner"
 import * as wasmPlanner from "./wasmPlanner"
 
 vi.mock("./wasmPlanner")
@@ -175,5 +175,20 @@ describe("getPlanWithProgress", () => {
     expect(vi.mocked(wasmPlanner.plan)).toHaveBeenCalledTimes(1)
     expect(progress).toHaveLength(0)
     expect(result.isError).toBe(false)
+  })
+
+  it("passes quality fields through to the request", () => {
+    const store = useOilFieldStore()
+    store.pumpjackQuality = "Legendary"
+    store.beaconQuality = "Rare"
+    store.electricPoleQuality = "Uncommon"
+    store.pumpjackModuleQuality = "Epic"
+    store.beaconModuleQuality = "Legendary"
+    const request = buildPlanRequest(store.$state)
+    expect(request.pumpjackQuality).toBe("Legendary")
+    expect(request.beaconQuality).toBe("Rare")
+    expect(request.electricPoleQuality).toBe("Uncommon")
+    expect(request.pumpjackModuleQuality).toBe("Epic")
+    expect(request.beaconModuleQuality).toBe("Legendary")
   })
 })

@@ -34,6 +34,7 @@ public static class ContractJson
         };
         options.Converters.Add(new JsonStringEnumConverter<PipeStrategy>());
         options.Converters.Add(new JsonStringEnumConverter<BeaconStrategy>());
+        options.Converters.Add(new JsonStringEnumConverter<Quality>());
         return options;
     }
 }

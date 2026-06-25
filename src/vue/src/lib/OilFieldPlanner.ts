@@ -8,6 +8,7 @@ import {
   OilFieldPlanRequest,
   OilFieldPlanResponse,
   PipeStrategy,
+  Quality,
 } from "./FactorioToolsApi"
 import { getEntries } from "./helpers"
 import * as wasmPlanner from "./wasmPlanner"
@@ -74,6 +75,11 @@ const requestPropertyGetters: RequestPropertyGetters = {
   },
   useUndergroundPipes: (state) => state.useUndergroundPipes,
   validateSolution: (state) => state.validateSolution,
+  pumpjackQuality: (state) => state.pumpjackQuality as Quality,
+  pumpjackModuleQuality: (state) => state.pumpjackModuleQuality as Quality,
+  beaconQuality: (state) => state.beaconQuality as Quality,
+  beaconModuleQuality: (state) => state.beaconModuleQuality as Quality,
+  electricPoleQuality: (state) => state.electricPoleQuality as Quality,
 } as const
 
 export type ApiError = {
@@ -113,7 +119,7 @@ function isStrictlyBetterPlan(candidate: OilFieldPlan, best: OilFieldPlan): bool
   return candidate.pipeCount < best.pipeCount
 }
 
-function buildPlanRequest(state: OilFieldStoreState): OilFieldPlanRequest {
+export function buildPlanRequest(state: OilFieldStoreState): OilFieldPlanRequest {
   const request: OilFieldPlanRequest = { blueprint: "" }
   for (const [requestKey, getter] of getEntries(requestPropertyGetters)) {
     ;(request as unknown as Record<string, unknown>)[requestKey] = getter(state)

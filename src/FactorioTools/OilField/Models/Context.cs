@@ -18,6 +18,27 @@ public class Context
     public required int[] LocationToAdjacentCount { get; set; }
 
     /// <summary>
+    /// The electric pole supply width after applying <see cref="OilFieldOptions.ElectricPoleQuality"/>
+    /// (base + 2 * quality level). Set by <see cref="InitializeContext"/>. Footprint width is unchanged.
+    /// </summary>
+    public int ElectricPoleSupplyWidthWithQuality { get; set; }
+
+    /// <summary>
+    /// The electric pole supply height after applying quality (base + 2 * quality level).
+    /// </summary>
+    public int ElectricPoleSupplyHeightWithQuality { get; set; }
+
+    /// <summary>
+    /// The electric pole wire reach after applying quality (base + 2 * quality level).
+    /// </summary>
+    public double ElectricPoleWireReachWithQuality { get; set; }
+
+    /// <summary>
+    /// The square of <see cref="ElectricPoleWireReachWithQuality"/>, precomputed for hot-path distance checks.
+    /// </summary>
+    public double ElectricPoleWireReachSquaredWithQuality { get; set; }
+
+    /// <summary>
     /// The heat pipe network routed by <see cref="AddHeatPipes"/>, or null if <see cref="OilFieldOptions.AddHeatPipes"/>
     /// is false. These locations also have <see cref="HeatPipe"/> entities placed on the <see cref="Grid"/>.
     /// </summary>

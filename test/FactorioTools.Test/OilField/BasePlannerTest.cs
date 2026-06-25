@@ -86,6 +86,16 @@ public class BasePlannerTest : BaseTest
         }
     }
 
+    public static string DecodeBlueprintJson(string blueprintString)
+    {
+        var base64 = blueprintString.Substring(1); // strip the leading version byte '0'
+        var compressed = Convert.FromBase64String(base64);
+        using var input = new System.IO.MemoryStream(compressed);
+        using var zlib = new System.IO.Compression.ZLibStream(input, System.IO.Compression.CompressionMode.Decompress);
+        using var reader = new System.IO.StreamReader(zlib);
+        return reader.ReadToEnd();
+    }
+
     public static TheoryData<int, string, bool, bool, bool> BlueprintsAndOptions
     {
         get

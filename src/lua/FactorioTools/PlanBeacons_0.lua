@@ -11,12 +11,13 @@ end)
 System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
   namespace.class("BeaconPlannerResult", function (namespace)
     local __members__, __ctor__
-    __ctor__ = function (this, Beacons, Effects)
+    __ctor__ = function (this, Beacons, Effects, EffectsGivenCounts)
       this.Beacons = Beacons
       this.Effects = Effects
+      this.EffectsGivenCounts = EffectsGivenCounts
     end
     __members__ = function ()
-      return "BeaconPlannerResult", "Beacons", "Effects"
+      return "BeaconPlannerResult", "Beacons", "Effects", "EffectsGivenCounts"
     end
     return {
       Effects = 0,
@@ -33,9 +34,17 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
 
   namespace.class("PlanBeacons", function (namespace)
     local Execute
-    Execute = function (context, pipes)
+    Execute = function (context, pipes, heatPipes)
       for _, pipe in System.each(pipes:EnumerateItems()) do
         context.Grid:AddEntity(pipe, KnapcodeOilField.TemporaryEntity(context.Grid:GetId()))
+      end
+
+      -- On Aquilo the heat network is routed first and the contested tiles next to pipes/pumpjacks are reserved for
+      -- it. Occupy them so the beacon strategies route around the heat pipes (heat wins; beacons take what's left).
+      if heatPipes ~= nil then
+        for _, heatPipe in System.each(heatPipes:EnumerateItems()) do
+          context.Grid:AddEntity(heatPipe, KnapcodeOilField.TemporaryEntity(context.Grid:GetId()))
+        end
       end
 
       local solutions = ListBeaconSolution(#context.Options.BeaconStrategies)
@@ -61,11 +70,11 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
           else
             default = System.throw(System.NotImplementedException())
           end
-          local beacons, effects = default:Deconstruct()
+          local beacons, effects, effectsGivenCounts = default:Deconstruct()
 
           completedStrategies:set(strategy, true)
 
-          solutions:Add(KnapcodeOilField.BeaconSolution(strategy, beacons, effects))
+          solutions:Add(KnapcodeOilField.BeaconSolution(strategy, beacons, effects, effectsGivenCounts))
           continue = true
         until 1
         if not continue then
@@ -75,6 +84,12 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
 
       for _, pipe in System.each(pipes:EnumerateItems()) do
         context.Grid:RemoveEntity(pipe)
+      end
+
+      if heatPipes ~= nil then
+        for _, heatPipe in System.each(heatPipes:EnumerateItems()) do
+          context.Grid:RemoveEntity(heatPipe)
+        end
       end
 
       if #solutions == 0 then

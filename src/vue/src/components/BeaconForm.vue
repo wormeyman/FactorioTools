@@ -96,6 +96,20 @@
         </div>
       </div>
     </div>
+    <QualitySelect
+      v-if="addBeacons"
+      label="Beacon quality"
+      idPrefix="beacon"
+      :showAdvancedOptions="showAdvancedOptions"
+      v-model="beaconQuality"
+    />
+    <QualitySelect
+      v-if="addBeacons"
+      label="Beacon module quality"
+      idPrefix="beacon-module"
+      :showAdvancedOptions="showAdvancedOptions"
+      v-model="beaconModuleQuality"
+    />
     <div class="form-check mt-3" v-if="addBeacons && showAdvancedOptions">
       <input
         type="checkbox"
@@ -120,6 +134,7 @@ import {
   useOilFieldStore,
 } from "../stores/OilFieldStore"
 import ModuleSelect from "./ModuleSelect.vue"
+import QualitySelect from "./QualitySelect.vue"
 
 export default {
   props: {
@@ -141,6 +156,8 @@ export default {
       "beaconSupplyHeight",
       "beaconWidth",
       "beaconHeight",
+      "beaconQuality",
+      "beaconModuleQuality",
     )
   },
   watch: {
@@ -167,6 +184,6 @@ export default {
       this.overlapBeacons = defaults.overlapBeacons
     },
   },
-  components: { ModuleSelect },
+  components: { ModuleSelect, QualitySelect },
 }
 </script>

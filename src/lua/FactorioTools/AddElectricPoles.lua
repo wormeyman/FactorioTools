@@ -261,7 +261,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
             break
           end
 
-          if AreElectricPolesConnected(center, other, context.Options) then
+          if AreElectricPolesConnected(center, other, context) then
             centerEntity:AddNeighbor(otherCenter)
           end
           continue = true
@@ -271,8 +271,8 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
         end
       end
     end
-    AreElectricPolesConnected = function (a, b, options)
-      return GetElectricPoleDistanceSquared(a, b, options) <= options.ElectricPoleWireReachSquared
+    AreElectricPolesConnected = function (a, b, context)
+      return GetElectricPoleDistanceSquared(a, b, context.Options) <= context.ElectricPoleWireReachSquaredWithQuality
     end
     GetElectricPoleDistanceSquared = function (a, b, options)
       local offsetX = System.div((options.ElectricPoleWidth - 1), 2)
@@ -400,7 +400,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
 
       allSubsets:Enqueue(coveredCountBatches)
 
-      local roundedReach = System.ToInt32(math.Ceiling(context.Options:getElectricPoleWireReach()))
+      local roundedReach = System.ToInt32(math.Ceiling(context.ElectricPoleWireReachWithQuality))
       local candidateToInfo = nil
 
       while coveredEntities:Any(false) do
@@ -504,7 +504,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
         local othersConnected = 0
         local min = 2147483647 --[[Int32.MaxValue]]
         for i = 0, #electricPoleList - 1 do
-          if AreElectricPolesConnected(candidate, electricPoleList:get(i), context.Options) then
+          if AreElectricPolesConnected(candidate, electricPoleList:get(i), context) then
             othersConnected = othersConnected + 1
           end
 
@@ -534,7 +534,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
 
           local default, info = candidateToInfo:TryGetValue(other)
           if default then
-            if distanceSquared <= context.Options.ElectricPoleWireReachSquared then
+            if distanceSquared <= context.ElectricPoleWireReachSquaredWithQuality then
               local extern = info
               extern.OthersConnected = extern.OthersConnected + 1
             end
@@ -583,7 +583,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
               end
 
               local distanceSquared = GetElectricPoleDistanceSquared(endpoint.A, endpoint.B, context.Options)
-              if distanceSquared <= context.Options.ElectricPoleWireReachSquared then
+              if distanceSquared <= context.ElectricPoleWireReachSquaredWithQuality then
                 continue = true
                 break
               end
@@ -612,10 +612,10 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       end
     end
     AddSinglePoleForConnection = function (context, electricPoles, groups, distance, endpoints)
-      local segments = System.ToInt32(math.Ceiling(distance / context.Options:getElectricPoleWireReach()))
+      local segments = System.ToInt32(math.Ceiling(distance / context.ElectricPoleWireReachWithQuality))
       local idealLine = KnapcodeOilField.BresenhamsLine.GetPath(endpoints.A, endpoints.B)
       local idealIndex = System.div(#idealLine, segments)
-      if not AreElectricPolesConnected(idealLine:get(0), idealLine:get(idealIndex), context.Options) then
+      if not AreElectricPolesConnected(idealLine:get(0), idealLine:get(idealIndex), context) then
         idealIndex = idealIndex - 1
       end
       local idealPoint = idealLine:get(idealIndex)
@@ -644,7 +644,7 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
 
         context.Grid:GetAdjacent(SpanLocation.ctorArray(neighbors), candidate)
         for i = 0, #neighbors - 1 do
-          if neighbors:get(i).IsValid and AreElectricPolesConnected(idealLine:get(0), neighbors:get(i), context.Options) and attempted:Add(neighbors:get(i)) then
+          if neighbors:get(i).IsValid and AreElectricPolesConnected(idealLine:get(0), neighbors:get(i), context) and attempted:Add(neighbors:get(i)) then
             candidates:Enqueue(neighbors:get(i))
           end
         end

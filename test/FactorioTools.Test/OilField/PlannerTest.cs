@@ -53,6 +53,27 @@ public class PlannerTest : BasePlannerTest
     }
 
     [Fact]
+    public void LegendaryElectricPolesReduceOrMatchPoleCount()
+    {
+        var blueprintString = SmallListBlueprintStrings[0];
+
+        var normal = OilFieldOptions.ForMediumElectricPole;
+        normal.ValidateSolution = true;
+        var (normalContext, _) = Planner.Execute(normal, ParseBlueprint.Execute(blueprintString));
+        var normalPoles = normalContext.Grid.GetEntities().OfType<ElectricPoleCenter>().Count();
+
+        var legendary = OilFieldOptions.ForMediumElectricPole;
+        legendary.ValidateSolution = true;
+        legendary.ElectricPoleQuality = Quality.Legendary;
+        var (legendaryContext, _) = Planner.Execute(legendary, ParseBlueprint.Execute(blueprintString));
+        var legendaryPoles = legendaryContext.Grid.GetEntities().OfType<ElectricPoleCenter>().Count();
+
+        Assert.True(
+            legendaryPoles <= normalPoles,
+            $"legendary used {legendaryPoles} poles vs normal {normalPoles}");
+    }
+
+    [Fact]
     public void AllowsElectricPolesToNotBePlanned()
     {
         // Arrange
@@ -298,6 +319,63 @@ public class PlannerTest : BasePlannerTest
         var (major, _, _, _) = GridToBlueprintString.ParseVersion(parsed.Version);
         Assert.Equal(2, major);
         Assert.Contains(parsed.Entities, e => e.Name == EntityNames.Vanilla.HeatPipe);
+    }
+
+    [Fact]
+    public void EmitsTwoPointZeroAndEntityQualityWithoutHeat()
+    {
+        // Arrange
+        var options = OilFieldOptions.ForMediumElectricPole;
+        options.PumpjackQuality = Quality.Legendary;
+        options.BeaconQuality = Quality.Rare;
+        options.ElectricPoleQuality = Quality.Uncommon;
+        var blueprint = ParseBlueprint.Execute(SmallListBlueprintStrings[0]);
+        var (context, _) = Planner.Execute(options, blueprint);
+
+        // Act
+        var blueprintString = GridToBlueprintString.Execute(context, addFbeOffset: false, addAvoidEntities: false);
+        var parsed = ParseBlueprint.Execute(blueprintString);
+
+        // Assert: 2.0 version even though heat is off
+        var (major, _, _, _) = GridToBlueprintString.ParseVersion(parsed.Version);
+        Assert.Equal(2, major);
+
+        // Assert: quality stamped on the right entities
+        Assert.Contains(parsed.Entities, e => e.Name == EntityNames.Vanilla.Pumpjack && e.Quality == "legendary");
+        Assert.Contains(parsed.Entities, e => e.Name == EntityNames.Vanilla.Beacon && e.Quality == "rare");
+        Assert.Contains(parsed.Entities, e => e.Name == options.ElectricPoleEntityName && e.Quality == "uncommon");
+    }
+
+    [Fact]
+    public void OmitsQualityFieldWhenNormal()
+    {
+        var options = OilFieldOptions.ForMediumElectricPole; // all qualities default Normal
+        var blueprint = ParseBlueprint.Execute(SmallListBlueprintStrings[0]);
+        var (context, _) = Planner.Execute(options, blueprint);
+
+        var blueprintString = GridToBlueprintString.Execute(context, addFbeOffset: false, addAvoidEntities: false);
+        var parsed = ParseBlueprint.Execute(blueprintString);
+
+        Assert.All(parsed.Entities, e => Assert.Null(e.Quality));
+    }
+
+    [Fact]
+    public void EmitsModuleQualityInItemsArray()
+    {
+        // Arrange
+        var options = OilFieldOptions.ForMediumElectricPole;
+        options.PumpjackModuleQuality = Quality.Epic;
+        options.BeaconModuleQuality = Quality.Legendary;
+        var blueprint = ParseBlueprint.Execute(SmallListBlueprintStrings[0]);
+        var (context, _) = Planner.Execute(options, blueprint);
+
+        // Act
+        var blueprintString = GridToBlueprintString.Execute(context, addFbeOffset: false, addAvoidEntities: false);
+        var json = DecodeBlueprintJson(blueprintString); // helper added in Step 3
+
+        // Assert: the emitted JSON contains the quality inside module id objects
+        Assert.Contains("\"quality\":\"epic\"", json);
+        Assert.Contains("\"quality\":\"legendary\"", json);
     }
 
     [Fact]

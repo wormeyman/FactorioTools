@@ -10,6 +10,18 @@
  * ---------------------------------------------------------------
  */
 
+/**
+ * A Factorio 2.0 quality tier. The integer value is the quality bonus level used to scale
+ * quality-affected stats (the engine skips a hidden level 4, so legendary is level 5).
+ */
+export enum Quality {
+  Normal = "Normal",
+  Uncommon = "Uncommon",
+  Rare = "Rare",
+  Epic = "Epic",
+  Legendary = "Legendary",
+}
+
 /** The strategy to use while planning pipes between pumpjacks. */
 export enum PipeStrategy {
   FbeOriginal = "FbeOriginal",
@@ -225,6 +237,32 @@ export interface OilFieldPlanRequest {
    */
   beaconModules?: Record<string, number>;
   /**
+   * The quality of the pumpjack entities in the output blueprint. Output-only; does not affect planning.
+   * @default "Normal"
+   */
+  pumpjackQuality?: Quality;
+  /**
+   * The quality of the beacon entities in the output blueprint. Output-only; does not affect planning.
+   * @default "Normal"
+   */
+  beaconQuality?: Quality;
+  /**
+   * The quality of the electric pole entities. Higher quality enlarges the supply area and wire reach
+   * the planner uses (see Context), so this affects planning, not just output.
+   * @default "Normal"
+   */
+  electricPoleQuality?: Quality;
+  /**
+   * The quality of the modules inserted into pumpjacks. Output-only; does not affect planning.
+   * @default "Normal"
+   */
+  pumpjackModuleQuality?: Quality;
+  /**
+   * The quality of the modules inserted into beacons. Output-only; does not affect planning.
+   * @default "Normal"
+   */
+  beaconModuleQuality?: Quality;
+  /**
    * The input blueprint containing at least one pumpjack.
    * @minLength 1
    * @example "0eJyMj70OwjAMhN/lZg8NbHkVhFB/rMrQuFGSIqoq707aMiCVgcWSz+fP5wXNMLEPogl2gbSjRtjLgii91sOqae0YFn5y/l63DxDS7FdFEjtkgmjHL1iTrwTWJEl4Z2zNfNPJNRyKgX6w/BjLwqjrpQI5E+ZSC7WTwO0+qTIdYKc/YKbaaOaAK0G38Pbre8KTQ/wY8hsAAP//AwAEfF3F"
@@ -342,6 +380,19 @@ export interface OilFieldPlanRequestResponse {
    * count that kind of module to add to each beacon. There can be multiple module types provided.
    */
   beaconModules: Record<string, number>;
+  /** The quality of the pumpjack entities in the output blueprint. Output-only; does not affect planning. */
+  pumpjackQuality: Quality;
+  /** The quality of the beacon entities in the output blueprint. Output-only; does not affect planning. */
+  beaconQuality: Quality;
+  /**
+   * The quality of the electric pole entities. Higher quality enlarges the supply area and wire reach
+   * the planner uses (see Context), so this affects planning, not just output.
+   */
+  electricPoleQuality: Quality;
+  /** The quality of the modules inserted into pumpjacks. Output-only; does not affect planning. */
+  pumpjackModuleQuality: Quality;
+  /** The quality of the modules inserted into beacons. Output-only; does not affect planning. */
+  beaconModuleQuality: Quality;
   /**
    * The input blueprint containing at least one pumpjack.
    * @minLength 1
@@ -378,17 +429,17 @@ export interface OilFieldPlanSummary {
    */
   rotatedPumpjacks: number;
   /**
-   * The number of pumpjacks dropped so the rest of the field can be fully heated on Aquilo.
+   * Pumpjacks dropped so the rest of the field could be fully heated on Aquilo. Zero unless heat pipes are enabled.
    * @format int32
    */
   heatDroppedPumpjacks: number;
   /**
-   * The number of placed pumpjacks with no adjacent heat pipe after heat routing.
+   * Pumpjacks still left without an adjacent heat pipe in the final output (normally zero).
    * @format int32
    */
   unheatedPumpjacks: number;
   /**
-   * The number of placed pipes with no adjacent heat pipe after heat routing.
+   * Pipe tiles still left without an adjacent heat pipe in the final output (normally zero).
    * @format int32
    */
   unheatedPipes: number;

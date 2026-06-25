@@ -140,8 +140,8 @@ public static class Helpers
             candidateFactory,
             context.Options.ElectricPoleWidth,
             context.Options.ElectricPoleHeight,
-            context.Options.ElectricPoleSupplyWidth,
-            context.Options.ElectricPoleSupplyHeight,
+            context.ElectricPoleSupplyWidthWithQuality,
+            context.ElectricPoleSupplyHeightWithQuality,
             removeUnused,
             includePumpjacks: true,
             includeBeacons: true);
@@ -685,8 +685,8 @@ public static class Helpers
             context,
             context.Options.ElectricPoleWidth,
             context.Options.ElectricPoleHeight,
-            context.Options.ElectricPoleSupplyWidth,
-            context.Options.ElectricPoleSupplyHeight,
+            context.ElectricPoleSupplyWidthWithQuality,
+            context.ElectricPoleSupplyHeightWithQuality,
             electricPoleCenters,
             includePumpjacks: true,
             includeBeacons: true);

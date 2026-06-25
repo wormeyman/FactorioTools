@@ -3,14 +3,21 @@ local System = System
 local KnapcodeFactorioTools
 local KnapcodeOilField
 local ListLocation
+local SpanLocation
+local ArrayLocation
+local QueueLocation
 System.import(function (out)
   KnapcodeFactorioTools = Knapcode.FactorioTools
   KnapcodeOilField = Knapcode.FactorioTools.OilField
   ListLocation = System.List(KnapcodeOilField.Location)
+  SpanLocation = System.Span(KnapcodeOilField.Location)
+  ArrayLocation = System.Array(KnapcodeOilField.Location)
+  QueueLocation = System.Queue(KnapcodeOilField.Location)
 end)
 System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
   namespace.class("Validate", function (namespace)
-    local PipesAreConnected, UndergroundPipesArePipes, PipesDoNotMatch, BeaconsDoNotOverlap, NoExistingBeacons, NoOverlappingEntities, CandidateCoversMoreEntities, AllEntitiesHavePower
+    local PipesAreConnected, UndergroundPipesArePipes, PipesDoNotMatch, BeaconsDoNotOverlap, NoExistingBeacons, NoOverlappingEntities, CandidateCoversMoreEntities, CountUnheatedTargets, 
+    NoUnheatedBeacons, HeatPipesAreConnected, AllEntitiesHavePower
     PipesAreConnected = function (context, optimizedPipes)
       if context.Options.ValidateSolution then
         for _, terminals in System.each(context.CenterToTerminals:getValues()) do
@@ -112,6 +119,150 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
         end
       end
     end
+    CountUnheatedTargets = function (context, unheatedPumpjacks, unheatedPipes)
+      unheatedPumpjacks = 0
+      unheatedPipes = 0
+
+      if not context.Options.AddHeatPipes or context.HeatPipes == nil then
+        return unheatedPumpjacks, unheatedPipes
+      end
+
+      local adjacent = SpanLocation.ctorArray(ArrayLocation(4))
+
+
+      for _, location in System.each(context.Grid:getEntityLocations():EnumerateItems()) do
+        local continue
+        repeat
+          if not System.is(context.Grid:get(location), KnapcodeOilField.Pipe) then
+            continue = true
+            break
+          end
+
+          context.Grid:GetAdjacent(adjacent, location)
+          local heated = false
+          do
+            local i = 0
+            while i < adjacent:getLength() and not heated do
+              heated = adjacent:get(i).IsValid and System.is(context.Grid:get(adjacent:get(i)), KnapcodeOilField.HeatPipe)
+              i = i + 1
+            end
+          end
+
+          if not heated then
+            unheatedPipes = unheatedPipes + 1
+          end
+          continue = true
+        until 1
+        if not continue then
+          break
+        end
+      end
+
+      for c = 0, #context.Centers - 1 do
+        local center = context.Centers:get(c)
+        local heated = false
+        do
+          local i = 0
+          while i < #KnapcodeOilField.AddHeatPipes.PumpjackRingOffsets and not heated do
+            local ringLocation = center:Translate1(KnapcodeOilField.AddHeatPipes.PumpjackRingOffsets:get(i))
+            heated = context.Grid:IsInBounds(ringLocation) and System.is(context.Grid:get(ringLocation), KnapcodeOilField.HeatPipe)
+            i = i + 1
+          end
+        end
+
+        if not heated then
+          unheatedPumpjacks = unheatedPumpjacks + 1
+        end
+      end
+      return unheatedPumpjacks, unheatedPipes
+    end
+    NoUnheatedBeacons = function (context)
+      if not context.Options.ValidateSolution or not context.Options.AddHeatPipes or not context.Options.AddBeacons or context.HeatPipes == nil then
+        return
+      end
+
+      local grid = context.Grid
+      local width = context.Options.BeaconWidth
+      local height = context.Options.BeaconHeight
+
+      local adjacent = SpanLocation.ctorArray(ArrayLocation(4))
+
+
+      for _, location in System.each(grid:getEntityLocations():EnumerateItems()) do
+        local continue
+        repeat
+          if not System.is(grid:get(location), KnapcodeOilField.BeaconCenter) then
+            continue = true
+            break
+          end
+
+          local minX = location.X - (System.div((width - 1), 2))
+          local maxX = location.X + (System.div(width, 2))
+          local minY = location.Y - (System.div((height - 1), 2))
+          local maxY = location.Y + (System.div(height, 2))
+
+          local heated = false
+          do
+            local x = minX
+            while x <= maxX and not heated do
+              do
+                local y = minY
+                while y <= maxY and not heated do
+                  grid:GetAdjacent(adjacent, KnapcodeOilField.Location(x, y))
+                  for i = 0, adjacent:getLength() - 1 do
+                    local n = adjacent:get(i)
+                    if n.IsValid and System.is(grid:get(n), KnapcodeOilField.HeatPipe) then
+                      heated = true
+                      break
+                    end
+                  end
+                  y = y + 1
+                end
+              end
+              x = x + 1
+            end
+          end
+
+          if not heated then
+            System.throw(KnapcodeFactorioTools.FactorioToolsException("A beacon was left without an adjacent heat pipe on Aquilo, so it would freeze."))
+          end
+          continue = true
+        until 1
+        if not continue then
+          break
+        end
+      end
+    end
+    HeatPipesAreConnected = function (context)
+      if context.Options.ValidateSolution and context.Options.AddHeatPipes and context.HeatPipes ~= nil and context.HeatPipes:getCount() > 0 then
+        local heatPipes = context.HeatPipes
+        local visited = context:GetLocationSet1()
+        local queue = QueueLocation()
+        local start = KnapcodeFactorioTools.CollectionExtensions.First(heatPipes:EnumerateItems(), KnapcodeOilField.Location)
+        queue:Enqueue(start)
+        visited:Add(start)
+        local reached = 1
+
+        local adjacent = SpanLocation.ctorArray(ArrayLocation(4))
+
+
+        while #queue > 0 do
+          local current = queue:Dequeue()
+          context.Grid:GetAdjacent(adjacent, current)
+          for i = 0, adjacent:getLength() - 1 do
+            local next = adjacent:get(i)
+            if next.IsValid and heatPipes:Contains(next) and visited:Add(next) then
+              reached = reached + 1
+              queue:Enqueue(next)
+            end
+          end
+        end
+
+        if reached ~= heatPipes:getCount() then
+          System.throw(KnapcodeFactorioTools.FactorioToolsException("The heat pipe network is not fully connected, so heat from a single source would not reach all of it."))
+        end
+      end
+    end
     AllEntitiesHavePower = function (context)
       if context.Options.ValidateSolution then
         local poweredEntities
@@ -136,6 +287,9 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       NoExistingBeacons = NoExistingBeacons,
       NoOverlappingEntities = NoOverlappingEntities,
       CandidateCoversMoreEntities = CandidateCoversMoreEntities,
+      CountUnheatedTargets = CountUnheatedTargets,
+      NoUnheatedBeacons = NoUnheatedBeacons,
+      HeatPipesAreConnected = HeatPipesAreConnected,
       AllEntitiesHavePower = AllEntitiesHavePower
     }
   end)

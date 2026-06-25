@@ -408,6 +408,51 @@
               "speed-module-3": 2
             }
           },
+          "pumpjackQuality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quality"
+              }
+            ],
+            "description": "The quality of the pumpjack entities in the output blueprint. Output-only; does not affect planning.",
+            "default": "Normal"
+          },
+          "beaconQuality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quality"
+              }
+            ],
+            "description": "The quality of the beacon entities in the output blueprint. Output-only; does not affect planning.",
+            "default": "Normal"
+          },
+          "electricPoleQuality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quality"
+              }
+            ],
+            "description": "The quality of the electric pole entities. Higher quality enlarges the supply area and wire reach\r\nthe planner uses (see Context), so this affects planning, not just output.",
+            "default": "Normal"
+          },
+          "pumpjackModuleQuality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quality"
+              }
+            ],
+            "description": "The quality of the modules inserted into pumpjacks. Output-only; does not affect planning.",
+            "default": "Normal"
+          },
+          "beaconModuleQuality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quality"
+              }
+            ],
+            "description": "The quality of the modules inserted into beacons. Output-only; does not affect planning.",
+            "default": "Normal"
+          },
           "blueprint": {
             "minLength": 1,
             "type": "string",
@@ -431,7 +476,9 @@
           "addHeatPipes",
           "beaconEntityName",
           "beaconHeight",
+          "beaconModuleQuality",
           "beaconModules",
+          "beaconQuality",
           "beaconStrategies",
           "beaconSupplyHeight",
           "beaconSupplyWidth",
@@ -439,6 +486,7 @@
           "blueprint",
           "electricPoleEntityName",
           "electricPoleHeight",
+          "electricPoleQuality",
           "electricPoleSupplyHeight",
           "electricPoleSupplyWidth",
           "electricPoleWidth",
@@ -447,7 +495,9 @@
           "optimizePipes",
           "overlapBeacons",
           "pipeStrategies",
+          "pumpjackModuleQuality",
           "pumpjackModules",
+          "pumpjackQuality",
           "useUndergroundPipes",
           "validateSolution"
         ],
@@ -568,6 +618,46 @@
             },
             "description": "The modules to add to the beacons. The string key is the internal item name for the module. The value is the\r\ncount that kind of module to add to each beacon. There can be multiple module types provided."
           },
+          "pumpjackQuality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quality"
+              }
+            ],
+            "description": "The quality of the pumpjack entities in the output blueprint. Output-only; does not affect planning."
+          },
+          "beaconQuality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quality"
+              }
+            ],
+            "description": "The quality of the beacon entities in the output blueprint. Output-only; does not affect planning."
+          },
+          "electricPoleQuality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quality"
+              }
+            ],
+            "description": "The quality of the electric pole entities. Higher quality enlarges the supply area and wire reach\r\nthe planner uses (see Context), so this affects planning, not just output."
+          },
+          "pumpjackModuleQuality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quality"
+              }
+            ],
+            "description": "The quality of the modules inserted into pumpjacks. Output-only; does not affect planning."
+          },
+          "beaconModuleQuality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Quality"
+              }
+            ],
+            "description": "The quality of the modules inserted into beacons. Output-only; does not affect planning."
+          },
           "blueprint": {
             "minLength": 1,
             "type": "string",
@@ -638,17 +728,17 @@
           },
           "heatDroppedPumpjacks": {
             "type": "integer",
-            "description": "The number of pumpjacks dropped so the rest of the field can be fully heated on Aquilo.",
+            "description": "Pumpjacks dropped so the rest of the field could be fully heated on Aquilo. Zero unless heat pipes are enabled.",
             "format": "int32"
           },
           "unheatedPumpjacks": {
             "type": "integer",
-            "description": "The number of placed pumpjacks with no adjacent heat pipe after heat routing.",
+            "description": "Pumpjacks still left without an adjacent heat pipe in the final output (normally zero).",
             "format": "int32"
           },
           "unheatedPipes": {
             "type": "integer",
-            "description": "The number of placed pipes with no adjacent heat pipe after heat routing.",
+            "description": "Pipe tiles still left without an adjacent heat pipe in the final output (normally zero).",
             "format": "int32"
           },
           "selectedPlans": {
@@ -686,6 +776,17 @@
         ],
         "type": "string",
         "description": "The strategy to use while planning pipes between pumpjacks."
+      },
+      "Quality": {
+        "enum": [
+          "Normal",
+          "Uncommon",
+          "Rare",
+          "Epic",
+          "Legendary"
+        ],
+        "type": "string",
+        "description": "A Factorio 2.0 quality tier. The integer value is the quality bonus level used to scale\r\nquality-affected stats (the engine skips a hidden level 4, so legendary is level 5)."
       }
     }
   }

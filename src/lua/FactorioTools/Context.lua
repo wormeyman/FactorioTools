@@ -105,6 +105,11 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
     return {
       DeltaX = 0,
       DeltaY = 0,
+      ElectricPoleSupplyWidthWithQuality = 0,
+      ElectricPoleSupplyHeightWithQuality = 0,
+      ElectricPoleWireReachWithQuality = 0,
+      ElectricPoleWireReachSquaredWithQuality = 0,
+      HeatDroppedPumpjacks = 0,
       GetLocationDictionary = GetLocationDictionary,
       GetLocationDictionary1 = GetLocationDictionary1,
       GetLocationSet = GetLocationSet,
