@@ -21,6 +21,11 @@ public static class ParseBlueprint
 
     public static Blueprint Execute(string blueprintString)
     {
+        if (string.IsNullOrEmpty(blueprintString))
+        {
+            throw new FactorioToolsException("Input blueprint string is empty.", badInput: true);
+        }
+
         if (blueprintString[0] != '0')
         {
             throw new FactorioToolsException("Input blueprint does not have the expected version byte of '0' at the beginning.", badInput: true);
