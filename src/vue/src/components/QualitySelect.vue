@@ -2,7 +2,18 @@
   <div class="row" v-show="showAdvancedOptions">
     <div class="col">
       <label :for="idPrefix + '-quality'" class="form-label d-flex align-items-center gap-2">
-        <span class="quality-badge" :style="{ backgroundColor: badgeColor }"></span>
+        <svg class="quality-badge" viewBox="0 0 24 24" role="img" :aria-label="qualityLabel(modelValue as Quality) + ' quality'">
+          <circle
+            v-for="(pip, i) in pips"
+            :key="i"
+            :cx="pip[0]"
+            :cy="pip[1]"
+            :r="pipRadius"
+            :fill="badgeColor"
+            stroke="#000"
+            stroke-width="1.6"
+          />
+        </svg>
         {{ label }}
       </label>
       <select
@@ -19,7 +30,13 @@
 
 <script lang="ts">
 import { Quality } from "../lib/FactorioToolsApi"
-import { QUALITY_ORDER, qualityColor, qualityLabel } from "../lib/quality"
+import {
+  QUALITY_ORDER,
+  qualityColor,
+  qualityLabel,
+  qualityPips,
+  qualityPipRadius,
+} from "../lib/quality"
 
 export default {
   props: {
@@ -36,6 +53,12 @@ export default {
     badgeColor(): string {
       return qualityColor(this.modelValue as Quality)
     },
+    pips() {
+      return qualityPips(this.modelValue as Quality)
+    },
+    pipRadius(): number {
+      return qualityPipRadius(this.modelValue as Quality)
+    },
   },
   methods: {
     qualityLabel,
@@ -45,12 +68,10 @@ export default {
 
 <style scoped>
 .quality-badge {
+  /* In-game quality pip cluster, recreated as SVG and tinted by the quality color. */
   display: inline-block;
-  width: 0.85rem;
-  height: 0.85rem;
-  border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.35);
-  /* A chevron-like notch evokes the in-game quality pip without bundling game art. */
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
 }
 </style>
