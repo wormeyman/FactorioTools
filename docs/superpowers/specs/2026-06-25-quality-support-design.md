@@ -166,9 +166,12 @@ Factorio-mod context and can be consulted, but it is not a source of icons or fo
 
 ## Testing
 
-- Output is now always 2.0, so all blueprint `*.verified.txt` snapshots regenerate (directions and
-  module-items format change). This is expected; accept the regenerated snapshots via the Verify
-  workflow.
+- No snapshot churn is expected. The Verify `*.verified.txt` snapshots are internal grid/plan-count
+  strings, which are independent of the output blueprint version (direction conversion and the module
+  `items` format are applied only at emission, not in the grid). Electric-pole quality defaults to
+  `Normal`, so existing tests keep the same geometry. The one version-sensitive test
+  (`EmitsHeatPipesInTwoPointZeroBlueprint`, which asserts the major version is 2) still passes under
+  always-2.0.
 - New unit tests:
   - Quality enum -> blueprint string mapping.
   - Pole scaling formula: assert the medium and substation rows from the table above.
@@ -180,6 +183,5 @@ Factorio-mod context and can be consulted, but it is not a source of icons or fo
 
 - Always-2.0 output changes the format for all users (1.1 importers can no longer use the output).
   Accepted: Factorio 2.0 is current and 1.1 is legacy.
-- Snapshot churn is large but mechanical.
 - The big-pole scaling row and the exact quality color hex values are the two factual details to pin
   during implementation; everything else is verified.
