@@ -32,7 +32,7 @@ public static class GridToBlueprintString
     /// Converts an internal <see cref="Direction"/> (1.1-style 8-way values: N=0, E=2, S=4, W=6) to the value emitted in
     /// the output blueprint. Factorio 2.0 uses 16-way directions (N=0, E=4, S=8, W=12); always emit 2.0 directions.
     /// </summary>
-    private static Direction ToOutputDirection(Context context, Direction direction)
+    private static Direction ToOutputDirection(Direction direction)
     {
         // Factorio 2.0 uses 16-way directions (N=0, E=4, S=8, W=12); internal directions are 1.1-style 8-way.
         return (Direction)((int)direction * 2);
@@ -52,14 +52,14 @@ public static class GridToBlueprintString
     /// Produces the value for an entity's "items" field as a list of <see cref="ModuleInsertPlan"/> targeting the
     /// given module inventory. Returns null when there are no modules so the field is omitted.
     /// </summary>
-    private static object? ToOutputItems(Context context, Dictionary<string, int> modules, int inventory, Quality quality)
+    private static object? ToOutputItems(Dictionary<string, int> modules, int inventory, Quality quality)
     {
         if (modules is null || modules.Count == 0)
         {
             return null;
         }
 
-        var qualityString = quality == Quality.Normal ? null : Qualities.ToBlueprintString(quality);
+        var qualityString = ToOutputQuality(quality);
         var plans = new List<ModuleInsertPlan>();
         var stack = 0;
         foreach (var pair in modules)
@@ -104,10 +104,10 @@ public static class GridToBlueprintString
                     entities.Add(new Entity
                     {
                         EntityNumber = nextEntityNumber++,
-                        Direction = ToOutputDirection(context, pumpjackCenter.Direction),
+                        Direction = ToOutputDirection(pumpjackCenter.Direction),
                         Name = EntityNames.Vanilla.Pumpjack,
                         Position = position,
-                        Items = ToOutputItems(context, context.Options.PumpjackModules, MiningDrillModuleInventory, context.Options.PumpjackModuleQuality),
+                        Items = ToOutputItems(context.Options.PumpjackModules, MiningDrillModuleInventory, context.Options.PumpjackModuleQuality),
                         Quality = ToOutputQuality(context.Options.PumpjackQuality),
                     });
                     break;
@@ -118,7 +118,7 @@ public static class GridToBlueprintString
                     entities.Add(new Entity
                     {
                         EntityNumber = nextEntityNumber++,
-                        Direction = ToOutputDirection(context, undergroundPipe.Direction),
+                        Direction = ToOutputDirection(undergroundPipe.Direction),
                         Name = EntityNames.Vanilla.PipeToGround,
                         Position = position,
                     });
@@ -182,7 +182,7 @@ public static class GridToBlueprintString
                         EntityNumber = nextEntityNumber++,
                         Name = context.Options.BeaconEntityName,
                         Position = position,
-                        Items = ToOutputItems(context, context.Options.BeaconModules, BeaconModuleInventory, context.Options.BeaconModuleQuality),
+                        Items = ToOutputItems(context.Options.BeaconModules, BeaconModuleInventory, context.Options.BeaconModuleQuality),
                         Quality = ToOutputQuality(context.Options.BeaconQuality),
                     });
                     break;

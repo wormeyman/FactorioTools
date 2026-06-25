@@ -86,7 +86,6 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
     end
     setElectricPoleWireReach = function (this, value)
       this._electricPoleWireReach = value
-      this.ElectricPoleWireReachSquared = value * value
     end
     class = {
       getForSmallIronElectricPole = getForSmallIronElectricPole,
@@ -107,7 +106,6 @@ System.namespace("Knapcode.FactorioTools.OilField", function (namespace)
       _electricPoleWireReach = 9 --[[OilFieldOptions.DefaultElectricPoleWireReach]],
       getElectricPoleWireReach = getElectricPoleWireReach,
       setElectricPoleWireReach = setElectricPoleWireReach,
-      ElectricPoleWireReachSquared = 81 --[[DefaultElectricPoleWireReach * DefaultElectricPoleWireReach]],
       ElectricPoleWidth = 1,
       ElectricPoleHeight = 1,
       BeaconEntityName = "beacon" --[[Vanilla.Beacon]],
