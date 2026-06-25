@@ -15,6 +15,7 @@ public class ModuleInsertPlan
     public int Inventory { get; set; }
     public int StartStack { get; set; }
     public int Count { get; set; }
+    public string? Quality { get; set; }
 }
 
 /// <summary>
@@ -72,6 +73,10 @@ public class EntityItemsConverter : JsonConverter<object>
                 writer.WritePropertyName("id");
                 writer.WriteStartObject();
                 writer.WriteString("name", plan.Name);
+                if (plan.Quality is not null)
+                {
+                    writer.WriteString("quality", plan.Quality);
+                }
                 writer.WriteEndObject();
 
                 writer.WritePropertyName("items");

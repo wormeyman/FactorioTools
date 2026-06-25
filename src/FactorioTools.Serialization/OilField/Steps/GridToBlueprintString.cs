@@ -49,27 +49,22 @@ public static class GridToBlueprintString
     }
 
     /// <summary>
-    /// Produces the value for an entity's "items" field. In 1.1 mode this is the module name-to-count dictionary; in
-    /// heat (2.0) mode it is a list of <see cref="ModuleInsertPlan"/> targeting the given module inventory. Returns null
-    /// when there are no modules so the field is omitted.
+    /// Produces the value for an entity's "items" field as a list of <see cref="ModuleInsertPlan"/> targeting the
+    /// given module inventory. Returns null when there are no modules so the field is omitted.
     /// </summary>
-    private static object? ToOutputItems(Context context, Dictionary<string, int> modules, int inventory)
+    private static object? ToOutputItems(Context context, Dictionary<string, int> modules, int inventory, Quality quality)
     {
         if (modules is null || modules.Count == 0)
         {
             return null;
         }
 
-        if (!context.Options.AddHeatPipes)
-        {
-            return modules;
-        }
-
+        var qualityString = quality == Quality.Normal ? null : Qualities.ToBlueprintString(quality);
         var plans = new List<ModuleInsertPlan>();
         var stack = 0;
         foreach (var pair in modules)
         {
-            plans.Add(new ModuleInsertPlan { Name = pair.Key, Inventory = inventory, StartStack = stack, Count = pair.Value });
+            plans.Add(new ModuleInsertPlan { Name = pair.Key, Inventory = inventory, StartStack = stack, Count = pair.Value, Quality = qualityString });
             stack += pair.Value;
         }
 
@@ -112,7 +107,7 @@ public static class GridToBlueprintString
                         Direction = ToOutputDirection(context, pumpjackCenter.Direction),
                         Name = EntityNames.Vanilla.Pumpjack,
                         Position = position,
-                        Items = ToOutputItems(context, context.Options.PumpjackModules, MiningDrillModuleInventory),
+                        Items = ToOutputItems(context, context.Options.PumpjackModules, MiningDrillModuleInventory, context.Options.PumpjackModuleQuality),
                         Quality = ToOutputQuality(context.Options.PumpjackQuality),
                     });
                     break;
@@ -187,7 +182,7 @@ public static class GridToBlueprintString
                         EntityNumber = nextEntityNumber++,
                         Name = context.Options.BeaconEntityName,
                         Position = position,
-                        Items = ToOutputItems(context, context.Options.BeaconModules, BeaconModuleInventory),
+                        Items = ToOutputItems(context, context.Options.BeaconModules, BeaconModuleInventory, context.Options.BeaconModuleQuality),
                         Quality = ToOutputQuality(context.Options.BeaconQuality),
                     });
                     break;

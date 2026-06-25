@@ -360,6 +360,25 @@ public class PlannerTest : BasePlannerTest
     }
 
     [Fact]
+    public void EmitsModuleQualityInItemsArray()
+    {
+        // Arrange
+        var options = OilFieldOptions.ForMediumElectricPole;
+        options.PumpjackModuleQuality = Quality.Epic;
+        options.BeaconModuleQuality = Quality.Legendary;
+        var blueprint = ParseBlueprint.Execute(SmallListBlueprintStrings[0]);
+        var (context, _) = Planner.Execute(options, blueprint);
+
+        // Act
+        var blueprintString = GridToBlueprintString.Execute(context, addFbeOffset: false, addAvoidEntities: false);
+        var json = DecodeBlueprintJson(blueprintString); // helper added in Step 3
+
+        // Assert: the emitted JSON contains the quality inside module id objects
+        Assert.Contains("\"quality\":\"epic\"", json);
+        Assert.Contains("\"quality\":\"legendary\"", json);
+    }
+
+    [Fact]
     public async Task ExecuteSample()
     {
         var result = Planner.ExecuteSample();
