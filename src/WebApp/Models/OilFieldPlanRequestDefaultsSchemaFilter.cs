@@ -46,6 +46,7 @@ public class OilFieldPlanRequestDefaultsSchemaFilter : ISchemaFilter
                     IEnumerable<BeaconStrategy> v => ToStringArray(v),
                     IEnumerable<PipeStrategy> v => ToStringArray(v),
                     IEnumerable<KeyValuePair<string, int>> v => ToObjectArray(v),
+                    Enum v => new OpenApiString(v.ToString()),
                     _ => throw new NotImplementedException(),
                 };
 
