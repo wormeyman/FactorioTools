@@ -1,5 +1,4 @@
 ﻿using System.CommandLine;
-using System.CommandLine.Invocation;
 using Knapcode.FactorioTools.OilField;
 
 public class Program
@@ -7,61 +6,61 @@ public class Program
     private static readonly string SmallListDataPath = Path.Combine(GetRepositoryRoot(), "test", "FactorioTools.Test", "OilField", "small-list.txt");
     private static readonly string BigListDataPath = Path.Combine(GetRepositoryRoot(), "test", "FactorioTools.Test", "OilField", "big-list.txt");
 
-    private static async Task Main(string[] args)
+    private static int Main(string[] args)
     {
         var rootCommand = new RootCommand("Factorio Tools command-line tool");
 
         var oilFieldCommand = new Command("oil-field", "oil field related subcommands");
-        rootCommand.Add(oilFieldCommand);
+        rootCommand.Subcommands.Add(oilFieldCommand);
 
         var normalizeCommand = new Command("normalize", "normalize the small and big list");
-        oilFieldCommand.Add(normalizeCommand);
+        oilFieldCommand.Subcommands.Add(normalizeCommand);
 
-        normalizeCommand.SetHandler(() =>
+        normalizeCommand.SetAction(parseResult =>
         {
             NormalizeBlueprints.Execute(BigListDataPath, SmallListDataPath, allowComments: false);
             NormalizeBlueprints.Execute(SmallListDataPath, BigListDataPath, allowComments: true);
         });
 
         var sampleCommand = new Command("sample", "Execute the oil field planner sample");
-        oilFieldCommand.Add(sampleCommand);
+        oilFieldCommand.Subcommands.Add(sampleCommand);
 
-        var pumpjackQualityOption = new Option<Quality>("--pumpjack-quality", () => Quality.Normal, "Pumpjack entity quality");
-        var beaconQualityOption = new Option<Quality>("--beacon-quality", () => Quality.Normal, "Beacon entity quality");
-        var electricPoleQualityOption = new Option<Quality>("--electric-pole-quality", () => Quality.Normal, "Electric pole entity quality");
-        var pumpjackModuleQualityOption = new Option<Quality>("--pumpjack-module-quality", () => Quality.Normal, "Pumpjack module quality");
-        var beaconModuleQualityOption = new Option<Quality>("--beacon-module-quality", () => Quality.Normal, "Beacon module quality");
-        sampleCommand.AddOption(pumpjackQualityOption);
-        sampleCommand.AddOption(beaconQualityOption);
-        sampleCommand.AddOption(electricPoleQualityOption);
-        sampleCommand.AddOption(pumpjackModuleQualityOption);
-        sampleCommand.AddOption(beaconModuleQualityOption);
+        var pumpjackQualityOption = new Option<Quality>("--pumpjack-quality") { Description = "Pumpjack entity quality", DefaultValueFactory = _ => Quality.Normal };
+        var beaconQualityOption = new Option<Quality>("--beacon-quality") { Description = "Beacon entity quality", DefaultValueFactory = _ => Quality.Normal };
+        var electricPoleQualityOption = new Option<Quality>("--electric-pole-quality") { Description = "Electric pole entity quality", DefaultValueFactory = _ => Quality.Normal };
+        var pumpjackModuleQualityOption = new Option<Quality>("--pumpjack-module-quality") { Description = "Pumpjack module quality", DefaultValueFactory = _ => Quality.Normal };
+        var beaconModuleQualityOption = new Option<Quality>("--beacon-module-quality") { Description = "Beacon module quality", DefaultValueFactory = _ => Quality.Normal };
+        sampleCommand.Options.Add(pumpjackQualityOption);
+        sampleCommand.Options.Add(beaconQualityOption);
+        sampleCommand.Options.Add(electricPoleQualityOption);
+        sampleCommand.Options.Add(pumpjackModuleQualityOption);
+        sampleCommand.Options.Add(beaconModuleQualityOption);
 
-        sampleCommand.SetHandler((InvocationContext invocationContext) =>
+        sampleCommand.SetAction(parseResult =>
         {
             var options = OilFieldOptions.ForMediumElectricPole;
             options.PipeStrategies = OilFieldOptions.AllPipeStrategies.ToList();
             options.BeaconStrategies = OilFieldOptions.AllBeaconStrategies.ToList();
             options.ValidateSolution = true;
-            options.PumpjackQuality = invocationContext.ParseResult.GetValueForOption(pumpjackQualityOption);
-            options.BeaconQuality = invocationContext.ParseResult.GetValueForOption(beaconQualityOption);
-            options.ElectricPoleQuality = invocationContext.ParseResult.GetValueForOption(electricPoleQualityOption);
-            options.PumpjackModuleQuality = invocationContext.ParseResult.GetValueForOption(pumpjackModuleQualityOption);
-            options.BeaconModuleQuality = invocationContext.ParseResult.GetValueForOption(beaconModuleQualityOption);
+            options.PumpjackQuality = parseResult.GetValue(pumpjackQualityOption);
+            options.BeaconQuality = parseResult.GetValue(beaconQualityOption);
+            options.ElectricPoleQuality = parseResult.GetValue(electricPoleQualityOption);
+            options.PumpjackModuleQuality = parseResult.GetValue(pumpjackModuleQualityOption);
+            options.BeaconModuleQuality = parseResult.GetValue(beaconModuleQualityOption);
 
             var (context, summary) = Planner.Execute(options, Planner.GetSampleBlueprint());
             Console.WriteLine(context.Grid.ToString());
         });
 
         var sandboxCommand = new Command("sandbox", "Execute the sandbox (random test code that you write)");
-        oilFieldCommand.Add(sandboxCommand);
+        oilFieldCommand.Subcommands.Add(sandboxCommand);
 
-        sandboxCommand.SetHandler(() =>
+        sandboxCommand.SetAction(parseResult =>
         {
             Sandbox();
         });
 
-        await rootCommand.InvokeAsync(args);
+        return rootCommand.Parse(args).Invoke();
     }
 
     private static string GetRepositoryRoot()
