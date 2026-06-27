@@ -16,9 +16,31 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
-    <!-- Pinned to 8.0.x: 9.0+/10.0 pull in Microsoft.OpenApi 2.x, whose schema model is a
-         breaking change that Swashbuckle 6.x cannot consume. The package is not part of the
-         shared framework, so it runs fine on the net10 host. -->
+    <!--
+      OpenApi + Swashbuckle are deliberately held back; do NOT bump them piecemeal.
+
+      Why pinned: Microsoft.AspNetCore.OpenApi 9.0+/10.0 pull in Microsoft.OpenApi 2.x,
+      whose schema model is a breaking change that Swashbuckle 6.x cannot consume. The
+      package is not part of the shared framework, so 8.0.x runs fine on the net10 host.
+
+      Unlock path (a real migration, not a version bump): Swashbuckle.AspNetCore 10.x
+      moved to Microsoft.OpenApi 2.x as well, so OpenApi 10.x + Swashbuckle 10.x is a
+      mutually compatible set. But Microsoft.OpenApi 1.x -> 2.x is a breaking API change
+      that hits our code directly:
+        - Models/RequireNonNullablePropertiesSchemaFilter.cs uses OpenApiSchema.Nullable,
+          which is removed (OpenAPI 3.1 expresses nullability differently).
+        - Models/OilFieldPlanRequestDefaultsSchemaFilter.cs is built on the whole
+          Microsoft.OpenApi.Any namespace (OpenApiString/Integer/Double/Array/Object,
+          IOpenApiAny), which is gone in 2.x - examples/defaults move to System.Text.Json
+          JsonNode. That filter needs a full rewrite.
+      It would also regenerate the committed swagger.json (likely 3.0 -> 3.1) and, in turn,
+      the Vue TS client (src/vue/src/lib via `npm run swagger-gen`).
+
+      Decision (2026-06-27): left pinned. This project is no longer deployed (see CLAUDE.md)
+      and its only real output is the swagger.json contract consumed by the deployed Vue
+      front-end, so the migration's cost/risk is not justified right now. Revisit only if
+      the API is hosted again or the OpenAPI contract needs to change.
+    -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
